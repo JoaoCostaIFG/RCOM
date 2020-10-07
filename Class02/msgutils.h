@@ -25,4 +25,6 @@ void setBCCField(unsigned char *buf);
 
 bool checkBCCField(unsigned char *buf);
 
+void printfBuf(unsigned char *buf);
+
 #endif // MSGUTILS_H

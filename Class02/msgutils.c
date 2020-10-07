@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 
 #include "msgutils.h"
@@ -14,4 +15,10 @@ void setBCCField(unsigned char *buf) {
 
 bool checkBCCField(unsigned char *buf) {
   return (buf[A_FIELD] ^ buf[C_FIELD]) == buf[BCC_FIELD];
+}
+
+void printfBuf(unsigned char *buf) {
+  for (int i = 0; i < MSG_SIZE; ++i)
+    printf("%X ", buf[i]);
+  printf("\n");
 }

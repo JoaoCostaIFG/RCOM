@@ -18,6 +18,18 @@
 
 volatile int STOP = FALSE;
 
+void sendUaMsg(int fd, unsigned char *buf) {
+  fillByteField(buf, FLAG1_FIELD, FLAG);
+  fillByteField(buf, A_FIELD, A_RECEIVER);
+  fillByteField(buf, C_FIELD, C_UA);
+  fillByteField(buf, FLAG2_FIELD, FLAG);
+  setBCCField(buf);
+
+  int res = write(fd, buf, 5 * sizeof(unsigned char));
+  printf("\t%d bytes written\n", res);
+  printfBuf(buf);
+}
+
 int main(int argc, char **argv) {
   int fd, res;
   struct termios oldtio, newtio;
@@ -84,14 +96,7 @@ int main(int argc, char **argv) {
   if (checkBCCField(buf))
     printf("Message received not recognized");
   else {
-    fillByteField(buf, FLAG1_FIELD, FLAG);
-    fillByteField(buf, A_FIELD, A_RECEIVER);
-    fillByteField(buf, C_FIELD, C_UA);
-    fillByteField(buf, FLAG2_FIELD, FLAG);
-    setBCCField(buf);
-
-    res = write(fd, buf, 5 * sizeof(unsigned char));
-    printf("\t%d bytes written\n", res);
+    sendUaMsg(fd, buf);
   }
 
   sleep(1); // for safety (in case the transference is still on-going)

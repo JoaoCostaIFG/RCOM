@@ -16,15 +16,8 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
-#define MSGSIZE 5 /* 5 bytes */
 
 volatile int STOP = FALSE;
-
-void printfBuf(unsigned char* buf) {
-  for (int i = 0; i < MSGSIZE; ++i)
-    printf("%X ", buf[i]);
-  printf("\n");
-}
 
 void sendSetMsg(int fd, unsigned char *buf) {
   // assemble msg
@@ -45,7 +38,7 @@ void sendSetMsg(int fd, unsigned char *buf) {
 int main(int argc, char **argv) {
   int fd, res;
   struct termios oldtio, newtio;
-  unsigned char buf[MSGSIZE];
+  unsigned char buf[MSG_SIZE];
 
   if (argc < 2) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
@@ -98,8 +91,8 @@ int main(int argc, char **argv) {
   res = 0;
   while (STOP == FALSE) {
     /* returns after VMIN chars have been input */
-    res += read(fd, buf + res, MSGSIZE);
-    if (res >= MSGSIZE)
+    res += read(fd, buf + res, MSG_SIZE);
+    if (res >= MSG_SIZE)
       STOP = TRUE;
   }
 
