@@ -63,12 +63,18 @@ int main(int argc, char **argv) {
 
   // clear queue
   tcflush(fd, TCIOFLUSH);
-
+  // set new struct
   if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
   printf("New termios structure set\n");
+
+  // assemble string
+  fillByteField(buf, FLAG1, FLAG);
+  fillByteField(buf, A_SENDER, FLAG);
+  fillByteField(buf, C1, FLAG);
+  fillByteField(buf, FLAG2, FLAG);
 
   // send string
   fgets(buf, 255, stdin);

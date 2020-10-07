@@ -100,7 +100,13 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-int check_data(buf) {
-    if (buf[0])
-    return 0;
+int check_data(unsigned char buf[]) {
+  unsigned char flag1 = buf[FLAG1];
+  unsigned char flag2 = buf[FLAG2];
+  unsigned char a = buf[A];
+  unsigned char c = buf[C];
+  unsigned char bcc = buf[BCC];
+
+  check_data(unsigned char *buf)
+  return 0;
 }
