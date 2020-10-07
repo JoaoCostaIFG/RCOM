@@ -11,3 +11,7 @@ void setBCCField(unsigned char *buf) {
   unsigned char bcc = buf[A] ^ buf[C];
   fillByteField(buf, BCC, bcc);
 }
+
+bool checkBCCField(unsigned char *buf) {
+  return (buf[A] ^ buf[C]) == buf[BCC];
+}

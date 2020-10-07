@@ -1,6 +1,8 @@
 #ifndef MSGUTILS_H
 #define MSGUTILS_H
 
+#include <stdbool.h>
+
 #define FLAG 0x7e
 #define A_SENDER 0x03
 #define A_RECEIVER 0x01
@@ -13,5 +15,7 @@ void fillByteField(unsigned char *buf, enum byteField field,
                    unsigned char byte);
 
 void setBCCField(unsigned char *buf);
+
+void checkBCCField(unsigned char *buf);
 
 #endif // MSGUTILS_H
