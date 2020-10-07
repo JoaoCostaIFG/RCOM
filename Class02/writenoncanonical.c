@@ -24,7 +24,7 @@ void sendSetMsg(int fd, unsigned char *buf) {
   // assemble msg
   fillByteField(buf, FLAG1_FIELD, FLAG);
   fillByteField(buf, A_FIELD, A_SENDER);
-  fillByteField(buf, C_FIELD, C2);
+  fillByteField(buf, C_FIELD, C_SET);
   fillByteField(buf, FLAG2_FIELD, FLAG);
   setBCCField(buf);
 

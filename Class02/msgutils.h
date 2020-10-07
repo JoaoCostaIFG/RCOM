@@ -6,8 +6,8 @@
 #define FLAG 0x7e
 #define A_SENDER 0x03
 #define A_RECEIVER 0x01
-#define C1 0x03
-#define C2 0x07
+#define C_SET 0x03
+#define C_UA 0x07
 
 enum byteField {
   FLAG1_FIELD = 0,
