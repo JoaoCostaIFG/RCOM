@@ -16,6 +16,6 @@ void fillByteField(unsigned char *buf, enum byteField field,
 
 void setBCCField(unsigned char *buf);
 
-void checkBCCField(unsigned char *buf);
+bool checkBCCField(unsigned char *buf);
 
 #endif // MSGUTILS_H
