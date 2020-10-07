@@ -1,5 +1,5 @@
 NAME_SERVER = noncanonical
-SRC_SERVER = noncanonical.c
+SRC_SERVER = noncanonical.c msgutils.c
 OBJ_SERVER = ${SRC_SERVER:.c=.o}
 
 NAME_CLIENT = writenoncanonical
