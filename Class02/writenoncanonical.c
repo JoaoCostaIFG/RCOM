@@ -16,7 +16,7 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
-#define MSGSIZE 40 /* 5 * 8 bits */
+#define MSGSIZE 5 /* 5 bytes */
 
 volatile int STOP = FALSE;
 
@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
     perror("tcsetattr");
     exit(-1);
   }
-
   printf("New termios structure set\n");
 
   // send string

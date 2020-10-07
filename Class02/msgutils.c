@@ -2,22 +2,22 @@
 
 #include "msgutils.h"
 
-void fillByteField(unsigned char* buf, enum byteField field, unsigned char* byte) {
+void fillByteField(unsigned char* buf, enum byteField field, unsigned char byte) {
   switch (field) {
     case FLAG1:
-      memcpy(buf, byte, 8 * sizeof(unsigned char));
+      buf[0] = byte;
       break;
     case A:
-      memcpy(buf + 8, byte, 8 * sizeof(unsigned char));
+      buf[1] = byte;
       break;
     case C:
-      memcpy(buf + 16, byte, 8 * sizeof(unsigned char));
+      buf[2] = byte;
       break;
     case BCC:
-      memcpy(buf + 24, byte, 8 * sizeof(unsigned char));
+      buf[3] = byte;
       break;
     case FLAG2:
-      memcpy(buf + 32, byte, 8 * sizeof(unsigned char));
+      buf[4] = byte;
       break;
     default:
       break;
