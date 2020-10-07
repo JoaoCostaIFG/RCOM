@@ -27,6 +27,7 @@ void sendUaMsg(int fd, unsigned char *buf) {
 
   int res = write(fd, buf, 5 * sizeof(unsigned char));
   printf("\t%d bytes written\n", res);
+  printf("Sent msg: ");
   printfBuf(buf);
 }
 
@@ -92,8 +93,9 @@ int main(int argc, char **argv) {
       STOP = TRUE;
   }
 
-  printf("\tGot string:%s\n", buf);
-  if (checkBCCField(buf))
+  printf("Rec msg: ");
+  printfBuf(buf);
+  if (!checkBCCField(buf))
     printf("Message received not recognized");
   else {
     sendUaMsg(fd, buf);
