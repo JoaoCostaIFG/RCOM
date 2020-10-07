@@ -91,9 +91,13 @@ int main(int argc, char **argv) {
   while (STOP == FALSE) {
     /* returns after VMIN chars have been input */
     res += read(fd, buf + res, MSGSIZE);
-    if (res >= 5)
+    if (res >= MSGSIZE)
       STOP = TRUE;
   }
+
+  for (int i = 0; i < MSGSIZE; ++i)
+    printf("%X ", buf[i]);
+  printf("\n");
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
