@@ -81,14 +81,18 @@ int main(int argc, char **argv) {
   }
 
   printf("\tGot string:%s\n", buf);
-  if (check_data(buf))
+  if (checkBCCField(buf))
     printf("Message received not recognized");
-  else
-    send_ack_msg();
+  else {
+    fillByteField(buf, FLAG1, FLAG);
+    fillByteField(buf, A_RECEIVER, FLAG);
+    fillByteField(buf, C1, FLAG);
+    fillByteField(buf, FLAG2, FLAG);
+    setBCCField(buf);
 
-  // send read string
-  res = write(fd, buf, strlen(buf) + 1);
-  printf("\t%d bytes written\n", res);
+    res = write(fd, buf, 5 * sizeof(unsigned char));
+    printf("\t%d bytes written\n", res);
+  }
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
@@ -97,16 +101,5 @@ int main(int argc, char **argv) {
   }
 
   close(fd);
-  return 0;
-}
-
-int check_data(unsigned char buf[]) {
-  unsigned char flag1 = buf[FLAG1];
-  unsigned char flag2 = buf[FLAG2];
-  unsigned char a = buf[A];
-  unsigned char c = buf[C];
-  unsigned char bcc = buf[BCC];
-
-  check_data(unsigned char *buf)
   return 0;
 }

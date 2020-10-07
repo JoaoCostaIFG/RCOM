@@ -75,11 +75,10 @@ int main(int argc, char **argv) {
   fillByteField(buf, A_SENDER, FLAG);
   fillByteField(buf, C1, FLAG);
   fillByteField(buf, FLAG2, FLAG);
+  setBCCField(buf);
 
   // send string
-  fgets(buf, 255, stdin);
-  buf[strlen(buf) - 1] = '\0';
-  res = write(fd, buf, strlen(buf) + 1);
+  res = write(fd, buf, 5 * sizeof(unsigned char));
   printf("\t%d bytes written\n", res);
 
   // read string
