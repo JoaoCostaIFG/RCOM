@@ -70,6 +70,12 @@ int main(int argc, char **argv) {
   }
   printf("New termios structure set\n");
 
+  // assemble string
+  fillByteField(buf, FLAG1, FLAG);
+  fillByteField(buf, A_SENDER, FLAG);
+  fillByteField(buf, C1, FLAG);
+  fillByteField(buf, FLAG2, FLAG);
+
   // send string
   fgets(buf, 255, stdin);
   buf[strlen(buf) - 1] = '\0';
