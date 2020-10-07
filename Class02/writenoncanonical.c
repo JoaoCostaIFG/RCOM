@@ -20,6 +20,12 @@
 
 volatile int STOP = FALSE;
 
+void printfBuf(unsigned char* buf) {
+  for (int i = 0; i < MSGSIZE; ++i)
+    printf("%X ", buf[i]);
+  printf("\n");
+}
+
 void sendSetMsg(int fd, unsigned char *buf) {
   // assemble msg
   fillByteField(buf, FLAG1_FIELD, FLAG);
@@ -32,6 +38,8 @@ void sendSetMsg(int fd, unsigned char *buf) {
   int res;
   res = write(fd, buf, 5 * sizeof(unsigned char));
   printf("\t%d bytes written\n", res);
+  printf("Sent msg: ");
+  printfBuf(buf);
 }
 
 int main(int argc, char **argv) {
@@ -95,9 +103,8 @@ int main(int argc, char **argv) {
       STOP = TRUE;
   }
 
-  for (int i = 0; i < MSGSIZE; ++i)
-    printf("%X ", buf[i]);
-  printf("\n");
+  printf("Received msg: ");
+  printfBuf(buf);
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
