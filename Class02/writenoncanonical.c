@@ -20,6 +20,20 @@
 
 volatile int STOP = FALSE;
 
+void sendSetMsg(int fd, unsigned char *buf) {
+  // assemble msg
+  fillByteField(buf, FLAG1_FIELD, FLAG);
+  fillByteField(buf, A_FIELD, A_SENDER);
+  fillByteField(buf, C_FIELD, C2);
+  fillByteField(buf, FLAG2_FIELD, FLAG);
+  setBCCField(buf);
+
+  // send msg
+  int res;
+  res = write(fd, buf, 5 * sizeof(unsigned char));
+  printf("\t%d bytes written\n", res);
+}
+
 int main(int argc, char **argv) {
   int fd, res;
   struct termios oldtio, newtio;
@@ -70,28 +84,16 @@ int main(int argc, char **argv) {
   }
   printf("New termios structure set\n");
 
-  // assemble string
-  fillByteField(buf, FLAG1, FLAG);
-  fillByteField(buf, A_SENDER, FLAG);
-  fillByteField(buf, C1, FLAG);
-  fillByteField(buf, FLAG2, FLAG);
-  setBCCField(buf);
+  sendSetMsg(fd, buf);
 
-  // send string
-  res = write(fd, buf, 5 * sizeof(unsigned char));
-  printf("\t%d bytes written\n", res);
-
-  // read string
+  // input loop
   res = 0;
-  while (STOP == FALSE) { // input loop
-    res +=
-        read(fd, buf + res, 255); /* returns after VMIN chars have been input */
-    printf("t:%s:%d\n", buf, res);
-
-    if (buf[res - 1] == '\0')
+  while (STOP == FALSE) {
+    /* returns after VMIN chars have been input */
+    res += read(fd, buf + res, MSGSIZE);
+    if (res >= 5)
       STOP = TRUE;
   }
-  printf("\tGot string:%s\n", buf);
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {

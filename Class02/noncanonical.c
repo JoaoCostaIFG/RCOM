@@ -84,10 +84,10 @@ int main(int argc, char **argv) {
   if (checkBCCField(buf))
     printf("Message received not recognized");
   else {
-    fillByteField(buf, FLAG1, FLAG);
-    fillByteField(buf, A_RECEIVER, FLAG);
-    fillByteField(buf, C1, FLAG);
-    fillByteField(buf, FLAG2, FLAG);
+    fillByteField(buf, FLAG1_FIELD, FLAG);
+    fillByteField(buf, A_FIELD, A_RECEIVER);
+    fillByteField(buf, C_FIELD, C2);
+    fillByteField(buf, FLAG2_FIELD, FLAG);
     setBCCField(buf);
 
     res = write(fd, buf, 5 * sizeof(unsigned char));

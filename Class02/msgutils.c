@@ -8,10 +8,10 @@ void fillByteField(unsigned char *buf, enum byteField field,
 }
 
 void setBCCField(unsigned char *buf) {
-  unsigned char bcc = buf[A] ^ buf[C];
-  fillByteField(buf, BCC, bcc);
+  unsigned char bcc = buf[A_FIELD] ^ buf[C_FIELD];
+  fillByteField(buf, BCC_FIELD, bcc);
 }
 
 bool checkBCCField(unsigned char *buf) {
-  return (buf[A] ^ buf[C]) == buf[BCC];
+  return (buf[A_FIELD] ^ buf[C_FIELD]) == buf[BCC_FIELD];
 }
