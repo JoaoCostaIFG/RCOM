@@ -8,7 +8,10 @@
 #define A_RECEIVER 0x01
 #define C_SET 0x03
 #define C_UA 0x07
+
 #define MSG_SIZE 5 // 5 Bytes
+#define TIMEOUT 3 // 3 seconds between answers
+#define MAXATTEMPTS 3
 
 enum byteField {
   FLAG1_FIELD = 0,
