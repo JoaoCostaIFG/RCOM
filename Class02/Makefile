@@ -3,7 +3,7 @@ SRC_SERVER = noncanonical.c
 OBJ_SERVER = ${SRC_SERVER:.c=.o}
 
 NAME_CLIENT = writenoncanonical
-SRC_CLIENT = writenoncanonical.c
+SRC_CLIENT = writenoncanonical.c msgutils.c
 OBJ_CLIENT = ${SRC_CLIENT:.c=.o}
 
 # compiler and linker

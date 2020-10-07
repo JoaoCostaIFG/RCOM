@@ -9,18 +9,21 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "msgutils.h"
+
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
+#define MSGSIZE 40 /* 5 * 8 bits */
 
 volatile int STOP = FALSE;
 
 int main(int argc, char **argv) {
   int fd, res;
   struct termios oldtio, newtio;
-  char buf[255];
+  unsigned char buf[MSGSIZE];
 
   if (argc < 2) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
@@ -51,13 +54,12 @@ int main(int argc, char **argv) {
   /* set input mode (non-canonical, no echo,...) */
   newtio.c_lflag = 0;
 
-  newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
-
   /*
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
     leitura do(s) próximo(s) caracter(es)
   */
+  newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
+  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
 
   // clear queue
   tcflush(fd, TCIOFLUSH);
@@ -78,7 +80,8 @@ int main(int argc, char **argv) {
   // read string
   res = 0;
   while (STOP == FALSE) { // input loop
-    res += read(fd, buf + res, 255); /* returns after VMIN chars have been input */
+    res +=
+        read(fd, buf + res, 255); /* returns after VMIN chars have been input */
     printf("t:%s:%d\n", buf, res);
 
     if (buf[res - 1] == '\0')
