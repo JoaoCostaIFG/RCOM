@@ -9,6 +9,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "msgutils.h"
+
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -19,8 +21,9 @@ volatile int STOP = FALSE;
 int main(int argc, char **argv) {
   int fd, res;
   struct termios oldtio, newtio;
-  char buf[255];
+  unsigned char buf[MSG_SIZE];
 
+  // Campo A 0x03
   if (argc < 2) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
     exit(1);
@@ -71,24 +74,17 @@ int main(int argc, char **argv) {
   // read string
   res = 0;
   while (STOP == FALSE) { // input loop
-    res += read(fd, buf + res, 255); /* returns after VMIN chars have been input */
-    printf("\t:%s:%d\n", buf, res);
-
-    /*
-     * for (int i = 0; i < res; ++i) {
-     *   if (buf[i] == '\n')
-     *     printf("-\\n\n");
-     *   else if (buf[i] == '\0')
-     *     printf("-\\0\n");
-     *   else
-     *     printf("-%c\n", buf[i]);
-     * }
-     */
-
-    if (buf[res - 1] == '\0')
+    res +=
+        read(fd, buf + res, 255); /* returns after VMIN chars have been input */
+    if (res == MSG_SIZE)
       STOP = TRUE;
   }
+
   printf("\tGot string:%s\n", buf);
+  if (check_data(buf))
+    printf("Message received not recognized");
+  else
+    send_ack_msg();
 
   // send read string
   res = write(fd, buf, strlen(buf) + 1);
@@ -102,4 +98,9 @@ int main(int argc, char **argv) {
 
   close(fd);
   return 0;
+}
+
+int check_data(buf) {
+    if (buf[0])
+    return 0;
 }
