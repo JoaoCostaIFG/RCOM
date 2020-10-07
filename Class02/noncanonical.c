@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
   else {
     fillByteField(buf, FLAG1_FIELD, FLAG);
     fillByteField(buf, A_FIELD, A_RECEIVER);
-    fillByteField(buf, C_FIELD, C2);
+    fillByteField(buf, C_FIELD, C_UA);
     fillByteField(buf, FLAG2_FIELD, FLAG);
     setBCCField(buf);
 
