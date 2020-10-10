@@ -53,10 +53,15 @@ void alrmHandler(int signo) {
 }
 
 void inputLoop() {
-  int res = 0;
+  int res = 0, read_res;
   while (STOP == FALSE) {
     /* returns after VMIN chars have been input */
-    res += read(fd, buf + res, MSG_SIZE);
+    read_res = read(fd, buf + res, MSG_SIZE);
+    if (read_res <= 0) {
+      perror("Read failed.");
+      exit(1);
+    }
+    res += read_res;
     if (res >= MSG_SIZE)
       STOP = TRUE;
   }
@@ -133,8 +138,7 @@ int main(int argc, char **argv) {
 
   sendSetMsg();
   alarm(TIMEOUT); // set alarm for timeout/retry
-
-  // input loop
+  inputLoop();
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {

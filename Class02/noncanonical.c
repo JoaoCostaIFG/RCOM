@@ -76,12 +76,11 @@ int main(int argc, char **argv) {
 
   // clear queue
   tcflush(fd, TCIOFLUSH);
-
+  // set new struct
   if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
-
   printf("New termios structure set\n");
 
   // read string
