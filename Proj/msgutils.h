@@ -10,9 +10,10 @@
 #define C_UA 0x07
 #define C_DISC 0x0B
 
-#define MSG_SIZE 5 // 5 Bytes
-#define TIMEOUT 3  // 3 seconds between answers
+#define MAX_SIZE 256 // in Bytes
+#define TIMEOUT 1    // seconds between answers
 #define MAXATTEMPTS 3
+#define BAUDRATE B38400
 
 enum SUByteField {
   FLAG1_FIELD = 0,
@@ -22,14 +23,35 @@ enum SUByteField {
   FLAG2_FIELD = 4
 };
 
-void fillByteField(unsigned char *buf, enum SUByteField field,
-                   unsigned char byte);
+enum applicationStatus { TRANSMITTER, RECEIVER };
 
-void setBCCField(unsigned char *buf);
+struct applicationLayer {
+  int fd; /* fileDescriptor correspondente a porta serie */
+  enum applicationStatus status;
+};
 
-bool checkBCCField(unsigned char *buf);
+struct linkLayer {
+  char port[20];                 /* Dispositivo /dev/ttySx, x = 0, 1 */
+  int baudRate;                  /* Velcidade de transmissao */
+  unsigned int sequenceNumber;   /* Numero de sequencia da trama: 0, 1*/
+  unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
+  unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
 
-void printfBuf(unsigned char *buf);
+  char frame[MAX_SIZE]; /* Trama */
+};
+
+struct linkLayer initLinkLayer();
+
+void fillByteField(char *buf, enum SUByteField field, char byte);
+
+void assembleOpenMsg(struct linkLayer *linkLayer,
+                    enum applicationStatus appStatus);
+
+void setBCCField(struct linkLayer *linkLayer);
+
+bool checkBCCField(struct linkLayer *linkLayer);
+
+void printfBuf(struct linkLayer *linkLayer);
 
 /* enum: transition
  * FLAG_RCV:  0

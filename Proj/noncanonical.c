@@ -1,6 +1,7 @@
 /*Non-Canonical Input Processing*/
 
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,49 +12,43 @@
 
 #include "msgutils.h"
 
-#define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
 
-volatile int STOP = FALSE;
+volatile int STOP = false;
+static struct applicationLayer appLayer;
+static struct linkLayer linkLayer;
 
-void sendUaMsg(int fd, unsigned char *buf) {
-  fillByteField(buf, FLAG1_FIELD, FLAG);
-  fillByteField(buf, A_FIELD, A_RECEIVER);
-  fillByteField(buf, C_FIELD, C_UA);
-  fillByteField(buf, FLAG2_FIELD, FLAG);
-  setBCCField(buf);
+void sendUaMsg() {
+  assembleOpenMsg(&linkLayer, appLayer.status);
 
-  int res = write(fd, buf, 5 * sizeof(unsigned char));
-  printf("\t%d bytes written\n", res);
-  printf("Sent msg: ");
-  printfBuf(buf);
+  fprintf(stderr, "Sending UA.\n");
+  int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
+  fprintf(stderr, "Sent UA.\n");
+  printfBuf(&linkLayer);
 }
 
 int main(int argc, char **argv) {
-  int fd, res;
   struct termios oldtio, newtio;
-  unsigned char buf[MSG_SIZE];
+  linkLayer = initLinkLayer();
+  appLayer.status = RECEIVER;
 
-  // Campo A 0x03
   if (argc < 2) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
     exit(1);
   }
+  strcpy(linkLayer.port, argv[1]);
 
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
   */
-
-  fd = open(argv[1], O_RDWR | O_NOCTTY);
-  if (fd < 0) {
-    perror(argv[1]);
+  appLayer.fd = open(linkLayer.port, O_RDWR | O_NOCTTY);
+  if (appLayer.fd < 0) {
+    perror(linkLayer.port);
     exit(-1);
   }
 
-  if (tcgetattr(fd, &oldtio) == -1) { /* save current port settings */
+  if (tcgetattr(appLayer.fd, &oldtio) == -1) { /* save current port settings */
     perror("tcgetattr");
     exit(-1);
   }
@@ -66,47 +61,44 @@ int main(int argc, char **argv) {
   /* set input mode (non-canonical, no echo,...) */
   newtio.c_lflag = 0;
 
-  newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
-
   /*
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
     leitura do(s) próximo(s) caracter(es)
   */
+  newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
+  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
 
   // clear queue
-  tcflush(fd, TCIOFLUSH);
+  tcflush(appLayer.fd, TCIOFLUSH);
 
-  if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
+  if (tcsetattr(appLayer.fd, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
-
-  printf("New termios structure set\n");
 
   // read string
-  res = 0;
-  while (STOP == FALSE) { // input loop
-    res +=
-        read(fd, buf + res, 255); /* returns after VMIN chars have been input */
-    if (res == MSG_SIZE)
-      STOP = TRUE;
+  fprintf(stderr, "Getting SET.\n");
+  int res = 0;
+  while (STOP == false) {
+    res += read(appLayer.fd, linkLayer.frame + res, 255); /* returns after VMIN chars read */
+    if (res == MAX_SIZE)
+      STOP = true;
   }
+  fprintf(stderr, "Got SET.\n");
 
-  printf("Rec msg: ");
-  printfBuf(buf);
-  if (!checkBCCField(buf))
-    printf("Message received not recognized");
+  if (!checkBCCField(&linkLayer))
+    fprintf(stderr, "SET BCC field error.");
   else {
-    sendUaMsg(fd, buf);
+    sendUaMsg();
   }
 
+  /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
-  if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
+  if (tcsetattr(appLayer.fd, TCSANOW, &oldtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
 
-  close(fd);
+  close(appLayer.fd);
   return 0;
 }
