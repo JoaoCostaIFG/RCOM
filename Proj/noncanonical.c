@@ -25,7 +25,24 @@ void sendUaMsg() {
   fprintf(stderr, "Sending UA.\n");
   int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
   fprintf(stderr, "Sent UA.\n");
-  /* printfBuf(&linkLayer); */
+}
+
+void inputLoop() {
+  char currByte, buf[MAX_SIZE];
+  int res = 0;
+  state_enum curr_state = START_ST;
+  transitions_enum transition;
+
+  fprintf(stderr, "Getting SET.\n");
+  while (curr_state != STOP_ST) {
+    res = read(appLayer.fd, &currByte, sizeof(char));
+    if (res <= 0)
+      perror("SET read.");
+
+    transition = byteToTransitionSET(currByte, buf, curr_state);
+    curr_state = event_matrix[curr_state][transition];
+  }
+  fprintf(stderr, "Got SET.\n");
 }
 
 int main(int argc, char **argv) {
@@ -78,20 +95,7 @@ int main(int argc, char **argv) {
   }
 
   // read string
-  fprintf(stderr, "Getting SET.\n");
-  int res = 0;
-  while (STOP == false) {
-    res += read(appLayer.fd, linkLayer.frame + res, 255); /* returns after VMIN chars read */
-    if (res == MAX_SIZE)
-      STOP = true;
-  }
-  fprintf(stderr, "Got SET.\n");
-
-  if (!checkBCCField(linkLayer.frame))
-    fprintf(stderr, "SET BCC field error.");
-  else {
-    sendUaMsg();
-  }
+  inputLoop();
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)

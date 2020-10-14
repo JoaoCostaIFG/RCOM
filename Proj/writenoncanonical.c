@@ -27,7 +27,6 @@ void sendSetMsg() {
   fprintf(stderr, "Sending SET.\n");
   int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
   fprintf(stderr, "Sent SET.\n");
-  /* printfBuf(&linkLayer); */
 }
 
 void alrmHandler(int signo) {
@@ -60,14 +59,6 @@ void inputLoop() {
     curr_state = event_matrix[curr_state][transition];
   }
   fprintf(stderr, "Got UA.\n");
-
-  if (checkBCCField(buf)) {
-    fprintf(stderr, "Message is OK!\n");
-  }
-  else {
-    fprintf(stderr, "Message is not OK! BCC field check failed.\n");
-    inputLoop(); // TODO
-  }
 }
 
 int main(int argc, char **argv) {

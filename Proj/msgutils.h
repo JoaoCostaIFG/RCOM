@@ -74,6 +74,7 @@ typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV, OTHER_RCV } transitions_enum;
  */
 typedef enum { START_ST, FLAG_ST, A_ST, C_ST, BCC_ST, STOP_ST } state_enum;
 
+transitions_enum byteToTransitionSET(char byte, char* buf, state_enum curr_state);
 transitions_enum byteToTransitionUA(char byte, char* buf, state_enum curr_state);
 
 static state_enum event_matrix[][7] = {
