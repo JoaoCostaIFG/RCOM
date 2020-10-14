@@ -46,6 +46,17 @@ void inputLoop() {
 }
 
 int main(int argc, char **argv) {
+  char str[] = {'a', 'd', 0x04, 'e', 0x7d, 0x7e, '\0'};
+  char res[MAX_SIZE];
+  stuffString(str, res);
+  for (int i = 0; i < strlen(res); ++i) {
+    printf("%X:%c\t", res[i], res[i]);
+    if (i < strlen(str))
+      printf("%X:%c\t", str[i], str[i]);
+    printf("\n");
+  }
+
+  exit(0);
   struct termios oldtio, newtio;
   linkLayer = initLinkLayer();
   appLayer.status = RECEIVER;
@@ -121,4 +132,3 @@ int main(int argc, char **argv) {
   close(appLayer.fd);
   return 0;
 }
-
