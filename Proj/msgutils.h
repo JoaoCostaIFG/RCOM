@@ -1,15 +1,17 @@
 #ifndef MSGUTILS_H
 #define MSGUTILS_H
 
-#include <termios.h>
 #include <stdbool.h>
+#include <termios.h>
 
 #define FLAG 0x7e
-#define A_SENDER 0x03 // requests de transmissor e respetivas respostas
+#define A_SENDER 0x03   // requests de transmissor e respetivas respostas
 #define A_RECEIVER 0x01 // requests de emissor e respetivas respostas
 #define C_SET 0x03
 #define C_UA 0x07
 #define C_DISC 0x0B
+#define ESC 0x7d
+#define STUFF_BYTE 0x20
 
 #define MAX_SIZE 256 // in Bytes
 #define TIMEOUT 1    // seconds between answers
@@ -46,7 +48,7 @@ struct linkLayer initLinkLayer();
 void fillByteField(char *buf, enum SUByteField field, char byte);
 
 void assembleOpenMsg(struct linkLayer *linkLayer,
-                    enum applicationStatus appStatus);
+                     enum applicationStatus appStatus);
 
 void setBCCField(char *buf);
 
@@ -55,6 +57,8 @@ char calcBCCField(char *buf);
 bool checkBCCField(char *buf);
 
 void printfBuf(char *buf);
+
+int stuffString(char str[], char res[]);
 
 /* enum: transition
  * FLAG_RCV:  0
@@ -74,17 +78,19 @@ typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV, OTHER_RCV } transitions_enum;
  */
 typedef enum { START_ST, FLAG_ST, A_ST, C_ST, BCC_ST, STOP_ST } state_enum;
 
-transitions_enum byteToTransitionSET(char byte, char* buf, state_enum curr_state);
-transitions_enum byteToTransitionUA(char byte, char* buf, state_enum curr_state);
+transitions_enum byteToTransitionSET(char byte, char *buf,
+                                     state_enum curr_state);
+transitions_enum byteToTransitionUA(char byte, char *buf,
+                                    state_enum curr_state);
 
 static state_enum event_matrix[][7] = {
     //  FLAG_ST_RCV   A_RCV        C_RCV       BCC_RCV   OTHER_RCV
-    {   FLAG_ST,      START_ST,    START_ST,   START_ST, START_ST},  // START_ST
-    {   FLAG_ST,      A_ST,        START_ST,   START_ST, START_ST},  // FLAG_ST
-    {   FLAG_ST,      START_ST,    C_ST,       START_ST, START_ST},  // A
-    {   FLAG_ST,      START_ST,    START_ST,   BCC_ST,   START_ST},  // C
-    {   STOP_ST,      START_ST,    START_ST,   START_ST, START_ST},  // BCC
-    {   STOP_ST,      STOP_ST,     STOP_ST,    STOP_ST,  STOP_ST},   // STOP_ST
+    {FLAG_ST, START_ST, START_ST, START_ST, START_ST}, // START_ST
+    {FLAG_ST, A_ST, START_ST, START_ST, START_ST},     // FLAG_ST
+    {FLAG_ST, START_ST, C_ST, START_ST, START_ST},     // A
+    {FLAG_ST, START_ST, START_ST, BCC_ST, START_ST},   // C
+    {STOP_ST, START_ST, START_ST, START_ST, START_ST}, // BCC
+    {STOP_ST, STOP_ST, STOP_ST, STOP_ST, STOP_ST},     // STOP_ST
 };
 
 #endif // MSGUTILS_H

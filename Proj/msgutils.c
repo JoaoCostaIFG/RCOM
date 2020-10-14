@@ -110,3 +110,30 @@ transitions_enum byteToTransitionUA(char byte, char *buf,
 
   return transition;
 }
+
+int stuffByte(char byte, char res[]) {
+  int bytes_returned = 1;
+  if (byte == ESC) {
+    res[0] = ESC;
+    res[1] = ESC ^ STUFF_BYTE;
+    bytes_returned = 2;
+  } else if (byte == FLAG) {
+    res[0] = ESC;
+    res[1] = FLAG ^ STUFF_BYTE;
+    bytes_returned = 2;
+  } else
+    res[0] = byte;
+  return bytes_returned;
+}
+
+int stuffString(char str[], char res[]) {
+  int j = 0;
+  for (int i = 0; i <= strlen(str); ++i) {
+    char stuffedBytes[2];
+    int n = stuffByte(str[i], stuffedBytes);
+    res[j++] = stuffedBytes[0];
+    if (n > 1)
+      res[j++] = stuffedBytes[1];
+  }
+  return 0;
+}
