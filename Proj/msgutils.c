@@ -45,11 +45,21 @@ void assembleInfoPacket(struct linkLayer *linkLayer, char *buf, int size) {
   fillByteField(linkLayer->frame, C_FIELD, linkLayer->sequenceNumber);
   setBCCField(linkLayer->frame);
 
-  strncpy(linkLayer->frame + 4, buf, size);
-  linkLayer->frame[size + 5] = calcBCC2Field(buf, size);
-  linkLayer->frame[size + 6] = FLAG;
+  char stuffed_string[MAX_SIZE];
+  int new_size = stuffString(buf, stuffed_string, size);
+  int i = 4;
+  memcpy(linkLayer->frame + i, stuffed_string, new_size);
 
-  linkLayer->frameSize = size + 7;
+  char bcc_res[2], bcc = calcBCC2Field(buf, new_size);
+  int bcc_size = stuffByte(bcc, bcc_res);
+  linkLayer->frame[new_size + (i++)] = bcc_res[0];
+
+  if (bcc_size == 2)
+    linkLayer->frame[new_size + (i++)] = bcc_res[1];
+
+  linkLayer->frame[new_size + (i++)] = FLAG;
+
+  linkLayer->frameSize = new_size + i;
 }
 
 void setBCCField(char *buf) {
@@ -148,14 +158,16 @@ int stuffByte(char byte, char res[]) {
   return bytes_returned;
 }
 
-int stuffString(char str[], char res[]) {
+char destuffByte(char byte) { return byte ^ STUFF_BYTE; }
+
+int stuffString(char str[], char res[], int size) {
   int j = 0;
-  for (int i = 0; i <= strlen(str); ++i) {
+  for (int i = 0; i < size; ++i) {
     char stuffedBytes[2];
     int n = stuffByte(str[i], stuffedBytes);
     res[j++] = stuffedBytes[0];
     if (n > 1)
       res[j++] = stuffedBytes[1];
   }
-  return 0;
+  return j;
 }

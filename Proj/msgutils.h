@@ -43,7 +43,7 @@ struct linkLayer {
   unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
   unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
 
-  int frameSize; /* Tamanho (em bytes) da trama atual */
+  int frameSize;        /* Tamanho (em bytes) da trama atual */
   char frame[MAX_SIZE]; /* Trama */
 };
 
@@ -67,7 +67,11 @@ bool checkBCCField(char *buf);
 
 void printfBuf(char *buf);
 
-int stuffString(char str[], char res[]);
+int stuffString(char str[], char res[], int size);
+
+char destuffByte(char byte);
+
+int stuffByte(char byte, char res[]);
 
 /* enum: transition
  * FLAG_RCV:  0

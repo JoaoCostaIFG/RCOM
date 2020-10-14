@@ -2,14 +2,14 @@
 
 #include <fcntl.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <string.h>
 
 #include "msgutils.h"
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
   alarm(linkLayer.timeout); // set alarm for timeout/retry
   inputLoop();
 
-  assembleInfoPacket(&linkLayer, "Ola Mundo!", 10);
+  assembleInfoPacket(&linkLayer, "Ola~Mundo!", 10);
   int res = sendCurrPacket(linkLayer, appLayer.fd);
 
   /* Reset serial port */
@@ -137,4 +137,3 @@ int main(int argc, char **argv) {
   close(appLayer.fd);
   return 0;
 }
-

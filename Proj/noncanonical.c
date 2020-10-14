@@ -100,13 +100,24 @@ int main(int argc, char **argv) {
 
   int res;
   char currByte;
+  bool escapeRoom = false;
   while (1) {
     res = read(appLayer.fd, &currByte, sizeof(char));
     if (res <= 0) {
       break;
     }
 
-    printf("%c ", currByte);
+    if (escapeRoom) {
+      currByte = destuffByte(currByte);
+      printf("%c:%X ", currByte, currByte);
+      escapeRoom = false;
+    } else {
+      if (currByte == ESC)
+        escapeRoom = true;
+      else
+        printf("%c:%X ", currByte, currByte);
+    }
+
     fflush(stdout);
   }
   printf("\n");
