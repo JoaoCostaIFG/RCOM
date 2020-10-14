@@ -37,7 +37,7 @@ void inputLoop() {
   while (curr_state != STOP_ST) {
     res = read(appLayer.fd, &currByte, sizeof(char));
     if (res <= 0)
-      perror("SET read.");
+      perror("SET read");
 
     transition = byteToTransitionSET(currByte, buf, curr_state);
     curr_state = event_matrix[curr_state][transition];
@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
 
   // read string
   inputLoop();
+  sendUaMsg();
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)

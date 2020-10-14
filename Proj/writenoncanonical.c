@@ -58,6 +58,7 @@ void inputLoop() {
     transition = byteToTransitionUA(currByte, buf, curr_state);
     curr_state = event_matrix[curr_state][transition];
   }
+  alarm(0); // cancel pending alarm
   fprintf(stderr, "Got UA.\n");
 }
 

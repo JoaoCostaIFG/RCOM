@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 #define FLAG 0x7e
-#define A_SENDER 0x03
-#define A_RECEIVER 0x01
+#define A_SENDER 0x03 // requests de transmissor e respetivas respostas
+#define A_RECEIVER 0x01 // requests de emissor e respetivas respostas
 #define C_SET 0x03
 #define C_UA 0x07
 #define C_DISC 0x0B
