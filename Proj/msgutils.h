@@ -1,6 +1,7 @@
 #ifndef MSGUTILS_H
 #define MSGUTILS_H
 
+#include <termios.h>
 #include <stdbool.h>
 
 #define FLAG 0x7e
@@ -47,11 +48,13 @@ void fillByteField(char *buf, enum SUByteField field, char byte);
 void assembleOpenMsg(struct linkLayer *linkLayer,
                     enum applicationStatus appStatus);
 
-void setBCCField(struct linkLayer *linkLayer);
+void setBCCField(char *buf);
 
-bool checkBCCField(struct linkLayer *linkLayer);
+char calcBCCField(char *buf);
 
-void printfBuf(struct linkLayer *linkLayer);
+bool checkBCCField(char *buf);
+
+void printfBuf(char *buf);
 
 /* enum: transition
  * FLAG_RCV:  0
@@ -59,9 +62,9 @@ void printfBuf(struct linkLayer *linkLayer);
  * C_RCV:  2
  * BCC_RCV: 3
  */
-typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV } transitions_enum;
+typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV, OTHER_RCV } transitions_enum;
 
-transitions_enum byteToTransition(char byte);
+transitions_enum byteToTransition(char byte, char* buf, enum applicationStatus appStatus);
 
 /* enum: state_enum
  * START:   0
@@ -73,14 +76,14 @@ transitions_enum byteToTransition(char byte);
  */
 typedef enum { START_ST, FLAG_ST, A_ST, C_ST, BCC_ST, STOP_ST } state_enum;
 
-static state_enum event_matrix[][6] = {
-    //  FLAG_ST_RCV    A_RCV        C_RCV       BCC_RCV
-    {FLAG_ST, START_ST, START_ST, START_ST}, // START_ST
-    {FLAG_ST, A_ST, START_ST, START_ST},     // FLAG_ST
-    {FLAG_ST, START_ST, C_ST, START_ST},     // A
-    {FLAG_ST, START_ST, START_ST, BCC_ST},   // C
-    {STOP_ST, START_ST, START_ST, START_ST}, // BCC
-    {STOP_ST, STOP_ST, STOP_ST, STOP_ST},    // STOP_ST
+static state_enum event_matrix[][7] = {
+    //  FLAG_ST_RCV   A_RCV        C_RCV       BCC_RCV   OTHER_RCV
+    {   FLAG_ST,      START_ST,    START_ST,   START_ST, START_ST},  // START_ST
+    {   FLAG_ST,      A_ST,        START_ST,   START_ST, START_ST},  // FLAG_ST
+    {   FLAG_ST,      START_ST,    C_ST,       START_ST, START_ST},  // A
+    {   FLAG_ST,      START_ST,    START_ST,   BCC_ST,   START_ST},  // C
+    {   STOP_ST,      START_ST,    START_ST,   START_ST, START_ST},  // BCC
+    {   STOP_ST,      STOP_ST,     STOP_ST,    STOP_ST,  STOP_ST},   // STOP_ST
 };
 
 #endif // MSGUTILS_H

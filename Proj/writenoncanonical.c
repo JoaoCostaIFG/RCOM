@@ -2,38 +2,32 @@
 
 #include <fcntl.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "msgutils.h"
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
-char buf[MAX_SIZE];
-int fd;
-
 volatile int STOP = false;
 static int attempts = MAXATTEMPTS;
+static struct applicationLayer appLayer;
+static struct linkLayer linkLayer;
 
 void sendSetMsg() {
-  // assemble msg
-  fillByteField(buf, FLAG1_FIELD, FLAG);
-  fillByteField(buf, A_FIELD, A_SENDER);
-  fillByteField(buf, C_FIELD, C_SET);
-  fillByteField(buf, FLAG2_FIELD, FLAG);
-  setBCCField(buf);
+  assembleOpenMsg(&linkLayer, appLayer.status);
 
   // send msg
-  int res;
-  res = write(fd, buf, 5 * sizeof(char));
-  printf("\t%d bytes written\n", res);
-  printf("Sent msg: ");
-  printfBuf(buf);
+  fprintf(stderr, "Sending SET.\n");
+  int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
+  fprintf(stderr, "Sent SET.\n");
+  /* printfBuf(&linkLayer); */
 }
 
 void alrmHandler(int signo) {
@@ -51,34 +45,41 @@ void alrmHandler(int signo) {
 }
 
 void inputLoop() {
-  state_enum curr_state;
-  char msg;
+  char currByte, buf[MAX_SIZE];
+  int res = 0;
+  state_enum curr_state = START_ST;
+  transitions_enum transition;
 
+  fprintf(stderr, "Getting UA.\n");
   while (curr_state != STOP_ST) {
-    /* returns after VMIN chars have been input */
-    read(fd, &msg, sizeof(char));
-    transitions_enum trans = byteToTransition(msg);
-    curr_state = event_matrix[curr_state][trans];
-  }
+    res = read(appLayer.fd, &currByte, sizeof(char));
+    if (res <= 0)
+      perror("UA read.");
 
-  printf("Received msg: ");
-  printfBuf(buf);
+    transition = byteToTransition(currByte, buf, appLayer.status);
+    curr_state = event_matrix[curr_state][transition];
+  }
+  fprintf(stderr, "Got UA.\n");
 
   if (checkBCCField(buf)) {
-    printf("Message is OK!\n");
-  } else {
-    printf("Message is not OK! BCC field check failed.\n");
+    fprintf(stderr, "Message is OK!\n");
+  }
+  else {
+    fprintf(stderr, "Message is not OK! BCC field check failed.\n");
     inputLoop(); // TODO
   }
 }
 
 int main(int argc, char **argv) {
   struct termios oldtio, newtio;
+  linkLayer = initLinkLayer();
+  appLayer.status = TRANSMITTER;
 
   if (argc < 2) {
     printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
     exit(1);
   }
+  strcpy(linkLayer.port, argv[1]);
 
   /* Set alarm signal handler */
   struct sigaction sa;
@@ -94,20 +95,19 @@ int main(int argc, char **argv) {
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
   */
-
-  fd = open(argv[1], O_RDWR | O_NOCTTY);
-  if (fd < 0) {
-    perror(argv[1]);
+  appLayer.fd = open(linkLayer.port, O_RDWR | O_NOCTTY);
+  if (appLayer.fd < 0) {
+    perror(linkLayer.port);
     exit(-1);
   }
 
-  if (tcgetattr(fd, &oldtio) == -1) { /* save current port settings */
+  if (tcgetattr(appLayer.fd, &oldtio) == -1) { /* save current port settings */
     perror("tcgetattr");
     exit(-1);
   }
 
   bzero(&newtio, sizeof(newtio));
-  newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+  newtio.c_cflag = linkLayer.baudRate | CS8 | CLOCAL | CREAD;
   newtio.c_iflag = IGNPAR;
   newtio.c_oflag = 0;
 
@@ -120,27 +120,27 @@ int main(int argc, char **argv) {
   */
   newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
   newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
-
   // clear queue
-  tcflush(fd, TCIOFLUSH);
+  tcflush(appLayer.fd, TCIOFLUSH);
+
   // set new struct
-  if (tcsetattr(fd, TCSANOW, &newtio) == -1) {
+  if (tcsetattr(appLayer.fd, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
-  printf("New termios structure set\n");
 
   sendSetMsg();
-  alarm(TIMEOUT); // set alarm for timeout/retry
+  alarm(linkLayer.timeout); // set alarm for timeout/retry
+  inputLoop();
 
-  // input loop
-
+  /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
-  if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
+  if (tcsetattr(appLayer.fd, TCSANOW, &oldtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
 
-  close(fd);
+  close(appLayer.fd);
   return 0;
 }
+

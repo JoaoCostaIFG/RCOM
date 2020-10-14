@@ -21,10 +21,11 @@ static struct linkLayer linkLayer;
 void sendUaMsg() {
   assembleOpenMsg(&linkLayer, appLayer.status);
 
+  // send msg
   fprintf(stderr, "Sending UA.\n");
   int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
   fprintf(stderr, "Sent UA.\n");
-  printfBuf(&linkLayer);
+  /* printfBuf(&linkLayer); */
 }
 
 int main(int argc, char **argv) {
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
   }
 
   bzero(&newtio, sizeof(newtio));
-  newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+  newtio.c_cflag = linkLayer.baudRate | CS8 | CLOCAL | CREAD;
   newtio.c_iflag = IGNPAR;
   newtio.c_oflag = 0;
 
@@ -67,10 +68,10 @@ int main(int argc, char **argv) {
   */
   newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
   newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
-
   // clear queue
   tcflush(appLayer.fd, TCIOFLUSH);
 
+  // set new struct
   if (tcsetattr(appLayer.fd, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
@@ -86,7 +87,7 @@ int main(int argc, char **argv) {
   }
   fprintf(stderr, "Got SET.\n");
 
-  if (!checkBCCField(&linkLayer))
+  if (!checkBCCField(linkLayer.frame))
     fprintf(stderr, "SET BCC field error.");
   else {
     sendUaMsg();
@@ -102,3 +103,4 @@ int main(int argc, char **argv) {
   close(appLayer.fd);
   return 0;
 }
+
