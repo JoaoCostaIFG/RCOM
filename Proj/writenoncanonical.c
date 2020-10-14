@@ -56,7 +56,7 @@ void inputLoop() {
     if (res <= 0)
       perror("UA read.");
 
-    transition = byteToTransition(currByte, buf, appLayer.status);
+    transition = byteToTransitionUA(currByte, buf, curr_state);
     curr_state = event_matrix[curr_state][transition];
   }
   fprintf(stderr, "Got UA.\n");

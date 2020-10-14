@@ -17,13 +17,13 @@ void fillByteField(char *buf, enum SUByteField field, char byte) {
   buf[field] = byte;
 }
 
-void assembleOpenMsg(struct linkLayer *linkLayer, enum applicationStatus appStatus) {
+void assembleOpenMsg(struct linkLayer *linkLayer,
+                     enum applicationStatus appStatus) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   if (appStatus == TRANSMITTER) {
     fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
     fillByteField(linkLayer->frame, C_FIELD, C_SET);
-  }
-  else {
+  } else {
     fillByteField(linkLayer->frame, A_FIELD, A_RECEIVER);
     fillByteField(linkLayer->frame, C_FIELD, C_UA);
   }
@@ -36,13 +36,9 @@ void setBCCField(char *buf) {
   fillByteField(buf, BCC_FIELD, bcc);
 }
 
-char calcBCCField(char *buf) {
-  return (buf[A_FIELD] ^ buf[C_FIELD]);
-}
+char calcBCCField(char *buf) { return (buf[A_FIELD] ^ buf[C_FIELD]); }
 
-bool checkBCCField(char *buf) {
-  return calcBCCField(buf) == buf[BCC_FIELD];
-}
+bool checkBCCField(char *buf) { return calcBCCField(buf) == buf[BCC_FIELD]; }
 
 void printfBuf(char *buf) {
   for (int i = 0; i < MAX_SIZE; ++i)
@@ -50,39 +46,33 @@ void printfBuf(char *buf) {
   printf("\n");
 }
 
-transitions_enum byteToTransition(char byte, char* buf, enum applicationStatus appStatus) {
+transitions_enum byteToTransitionUA(char byte, char *buf,
+                                     state_enum curr_state) {
   transitions_enum transition;
-  switch (byte) {
+  if (curr_state == C_ST && byte == calcBCCField(buf)) {
+    transition = BCC_RCV;
+    buf[BCC_FIELD] = calcBCCField(buf);
+  } else {
+    switch (byte) {
     case FLAG:
       transition = FLAG_RCV;
-      buf[FLAG1_FIELD] = byte;
+      if (curr_state == START_ST)
+        buf[FLAG1_FIELD] = FLAG;
+      else if (curr_state == BCC_ST)
+        buf[FLAG2_FIELD] = FLAG;
       break;
     case A_SENDER:
-    /* case C_SET: */
       transition = A_RCV;
       buf[A_FIELD] = byte;
-
-      if (appStatus == RECEIVER) {
-        transition = C_RCV;
-        buf[C_FIELD] = byte;
-      }
-      else
-        transition = OTHER_RCV;
       break;
     case C_UA:
-      if (appStatus == TRANSMITTER) {
-        transition = C_RCV;
-        buf[C_FIELD] = byte;
-      }
-      else
-        transition = OTHER_RCV;
+      transition = C_RCV;
+      buf[C_FIELD] = byte;
       break;
     default:
-      if (byte == (buf[A_FIELD] ^ buf[C_FIELD]))
-        transition = BCC_RCV;
-      else
-        transition = OTHER_RCV;
+      transition = OTHER_RCV;
       break;
+    }
   }
 
   return transition;
