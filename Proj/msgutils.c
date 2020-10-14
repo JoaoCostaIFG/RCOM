@@ -46,6 +46,38 @@ void printfBuf(char *buf) {
   printf("\n");
 }
 
+transitions_enum byteToTransitionSET(char byte, char *buf,
+                                     state_enum curr_state) {
+  transitions_enum transition;
+  if (curr_state == C_ST && byte == calcBCCField(buf)) {
+    transition = BCC_RCV;
+    buf[BCC_FIELD] = calcBCCField(buf);
+  } else {
+    switch (byte) {
+    case FLAG:
+      transition = FLAG_RCV;
+      if (curr_state == START_ST)
+        buf[FLAG1_FIELD] = FLAG;
+      else if (curr_state == BCC_ST)
+        buf[FLAG2_FIELD] = FLAG;
+      break;
+    case A_SENDER:
+      transition = A_RCV;
+      buf[A_FIELD] = byte;
+      break;
+    case C_SET:
+      transition = C_RCV;
+      buf[C_FIELD] = byte;
+      break;
+    default:
+      transition = OTHER_RCV;
+      break;
+    }
+  }
+
+  return transition;
+}
+
 transitions_enum byteToTransitionUA(char byte, char *buf,
                                      state_enum curr_state) {
   transitions_enum transition;
