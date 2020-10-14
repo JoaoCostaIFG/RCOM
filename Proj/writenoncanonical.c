@@ -16,16 +16,15 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
 volatile int STOP = false;
-static int attempts = MAXATTEMPTS;
 static struct applicationLayer appLayer;
 static struct linkLayer linkLayer;
 
 void sendSetMsg() {
-  assembleOpenMsg(&linkLayer, appLayer.status);
+  assembleOpenPacket(&linkLayer, appLayer.status);
 
   // send msg
   fprintf(stderr, "Sending SET.\n");
-  int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
+  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
   fprintf(stderr, "Sent SET.\n");
 }
 
@@ -33,13 +32,13 @@ void alrmHandler(int signo) {
   if (signo != SIGALRM)
     return;
 
-  if (attempts <= 0) {
+  if (linkLayer.numTransmissions <= 0) {
     fprintf(stderr, "Waiting for answer timedout\n");
     exit(-1);
   }
 
-  --attempts;
-  sendSetMsg();
+  --linkLayer.numTransmissions;
+  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
   alarm(TIMEOUT);
 }
 
@@ -124,6 +123,9 @@ int main(int argc, char **argv) {
   sendSetMsg();
   alarm(linkLayer.timeout); // set alarm for timeout/retry
   inputLoop();
+
+  assembleInfoPacket(&linkLayer, "Ola Mundo!", 10);
+  int res = sendCurrPacket(linkLayer, appLayer.fd);
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
