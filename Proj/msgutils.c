@@ -17,8 +17,8 @@ void fillByteField(char *buf, enum SUByteField field, char byte) {
   buf[field] = byte;
 }
 
-void assembleOpenMsg(struct linkLayer *linkLayer,
-                     enum applicationStatus appStatus) {
+void assembleOpenPacket(struct linkLayer *linkLayer,
+                        enum applicationStatus appStatus) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
   if (appStatus == TRANSMITTER) {
@@ -28,6 +28,28 @@ void assembleOpenMsg(struct linkLayer *linkLayer,
   }
   fillByteField(linkLayer->frame, FLAG2_FIELD, FLAG);
   setBCCField(linkLayer->frame);
+
+  linkLayer->frameSize = 5;
+}
+
+static char calcBCC2Field(char *buf, int size) {
+  char ret = 0;
+  for (int i = 0; i < size; ++i)
+    ret ^= buf[i];
+  return ret;
+}
+
+void assembleInfoPacket(struct linkLayer *linkLayer, char *buf, int size) {
+  fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
+  fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
+  fillByteField(linkLayer->frame, C_FIELD, linkLayer->sequenceNumber);
+  setBCCField(linkLayer->frame);
+
+  strncpy(linkLayer->frame + 4, buf, size);
+  linkLayer->frame[size + 5] = calcBCC2Field(buf, size);
+  linkLayer->frame[size + 6] = FLAG;
+
+  linkLayer->frameSize = size + 7;
 }
 
 void setBCCField(char *buf) {

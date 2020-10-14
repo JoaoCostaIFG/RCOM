@@ -18,12 +18,12 @@ volatile int STOP = false;
 static struct applicationLayer appLayer;
 static struct linkLayer linkLayer;
 
-void sendUaMsg() {
-  assembleOpenMsg(&linkLayer, appLayer.status);
+void sendUAMsg() {
+  assembleOpenPacket(&linkLayer, appLayer.status);
 
   // send msg
   fprintf(stderr, "Sending UA.\n");
-  int res = write(appLayer.fd, linkLayer.frame, 5 * sizeof(char));
+  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
   fprintf(stderr, "Sent UA.\n");
 }
 
@@ -96,7 +96,20 @@ int main(int argc, char **argv) {
 
   // read string
   inputLoop();
-  sendUaMsg();
+  sendUAMsg();
+
+  int res;
+  char currByte;
+  while (1) {
+    res = read(appLayer.fd, &currByte, sizeof(char));
+    if (res <= 0) {
+      break;
+    }
+
+    printf("%c ", currByte);
+    fflush(stdout);
+  }
+  printf("\n");
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)

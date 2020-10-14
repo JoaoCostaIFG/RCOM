@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <termios.h>
 
+// I, SET, DISC: commands
+// UA, RR, REJ: answers
+
 #define FLAG 0x7e
 #define A_SENDER 0x03   // requests de transmissor e respetivas respostas
 #define A_RECEIVER 0x01 // requests de emissor e respetivas respostas
@@ -40,15 +43,21 @@ struct linkLayer {
   unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
   unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
 
+  int frameSize; /* Tamanho (em bytes) da trama atual */
   char frame[MAX_SIZE]; /* Trama */
 };
+
+#define sendCurrPacket(linkLayer, fd)                                          \
+  write(fd, linkLayer.frame, linkLayer.frameSize)
 
 struct linkLayer initLinkLayer();
 
 void fillByteField(char *buf, enum SUByteField field, char byte);
 
-void assembleOpenMsg(struct linkLayer *linkLayer,
-                     enum applicationStatus appStatus);
+void assembleOpenPacket(struct linkLayer *linkLayer,
+                        enum applicationStatus appStatus);
+
+void assembleInfoPacket(struct linkLayer *linkLayer, char *buf, int size);
 
 void setBCCField(char *buf);
 
