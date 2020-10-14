@@ -3,22 +3,48 @@
 
 #include "msgutils.h"
 
-void fillByteField(unsigned char *buf, enum SUByteField field,
-                   unsigned char byte) {
+struct linkLayer initLinkLayer() {
+  struct linkLayer linkLayer;
+  linkLayer.baudRate = BAUDRATE;
+  linkLayer.sequenceNumber = 0;
+  linkLayer.timeout = TIMEOUT;
+  linkLayer.numTransmissions = MAXATTEMPTS;
+
+  return linkLayer;
+}
+
+void fillByteField(char *buf, enum SUByteField field, char byte) {
   buf[field] = byte;
 }
 
-void setBCCField(unsigned char *buf) {
+void assembleOpenMsg(struct linkLayer *linkLayer, enum applicationStatus appStatus) {
+  fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
+  if (appStatus == TRANSMITTER) {
+    fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
+    fillByteField(linkLayer->frame, C_FIELD, C_SET);
+  }
+  else {
+    fillByteField(linkLayer->frame, A_FIELD, A_RECEIVER);
+    fillByteField(linkLayer->frame, C_FIELD, C_UA);
+  }
+  fillByteField(linkLayer->frame, FLAG2_FIELD, FLAG);
+  setBCCField(linkLayer);
+}
+
+void setBCCField(struct linkLayer *linkLayer) {
+  char *buf = linkLayer->frame;
   unsigned char bcc = buf[A_FIELD] ^ buf[C_FIELD];
   fillByteField(buf, BCC_FIELD, bcc);
 }
 
-bool checkBCCField(unsigned char *buf) {
+bool checkBCCField(struct linkLayer *linkLayer) {
+  char *buf = linkLayer->frame;
   return (buf[A_FIELD] ^ buf[C_FIELD]) == buf[BCC_FIELD];
 }
 
-void printfBuf(unsigned char *buf) {
-  for (int i = 0; i < MSG_SIZE; ++i)
+void printfBuf(struct linkLayer *linkLayer) {
+  char *buf = linkLayer->frame;
+  for (int i = 0; i < MAX_SIZE; ++i)
     printf("%X ", buf[i]);
   printf("\n");
 }

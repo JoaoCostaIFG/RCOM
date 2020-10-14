@@ -8,19 +8,14 @@
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "msgutils.h"
 
-#define BAUDRATE B38400
-#define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
 
-volatile int STOP = FALSE;
+volatile int STOP = false;
 static int attempts = MAXATTEMPTS;
-static int fd;
-static unsigned char buf[MSG_SIZE];
 
 void sendSetMsg() {
   // assemble msg
@@ -32,7 +27,7 @@ void sendSetMsg() {
 
   // send msg
   int res;
-  res = write(fd, buf, 5 * sizeof(unsigned char));
+  res = write(fd, buf, 5 * sizeof(char));
   printf("\t%d bytes written\n", res);
   printf("Sent msg: ");
   printfBuf(buf);
@@ -54,11 +49,11 @@ void alrmHandler(int signo) {
 
 void inputLoop() {
   int res = 0;
-  while (STOP == FALSE) {
+  while (STOP == false) {
     /* returns after VMIN chars have been input */
-    res += read(fd, buf + res, MSG_SIZE);
-    if (res >= MSG_SIZE)
-      STOP = TRUE;
+    res += read(fd, buf + res, MAX_SIZE);
+    if (res >= MAX_SIZE)
+      STOP = true;
   }
 
   printf("Received msg: ");
