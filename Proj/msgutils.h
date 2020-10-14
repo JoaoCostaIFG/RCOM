@@ -47,16 +47,16 @@ typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV } transitions_enum;
  * BCC:     4
  * STOP:    4
  */
-typedef enum { START, FLAG, A, C, BCC, STOP } state_enum;
+typedef enum { START_ST, FLAG_ST, A_ST, C_ST, BCC_ST, STOP_ST } state_enum;
 
 static state_enum event_matrix[][6] = {
-    //  FLAG_RCV    A_RCV   C_RCV   BCC_RCV
-    {   FLAG,       START,  START,  START}, // START
-    {   FLAG,       A,      START,  START}, // FLAG
-    {   FLAG,       START,  C,      START}, // A
-    {   FLAG,       START,  START,  BCC},   // C
-    {   STOP,       START,  START,  START}, // BCC
-    {   STOP,       STOP,   STOP,    STOP}, // STOP
+    //  FLAG_ST_RCV    A_RCV        C_RCV       BCC_RCV
+    {   FLAG_ST,       START_ST,    START_ST,   START_ST},  // START_ST
+    {   FLAG_ST,       A_ST,        START_ST,   START_ST},  // FLAG_ST
+    {   FLAG_ST,       START_ST,    C_ST,       START_ST},  // A
+    {   FLAG_ST,       START_ST,    START_ST,   BCC_ST},    // C
+    {   STOP_ST,       START_ST,    START_ST,   START_ST},  // BCC
+    {   STOP_ST,       STOP_ST,     STOP_ST,    STOP_ST},   // STOP_ST
 };
 
 #endif // MSGUTILS_H
