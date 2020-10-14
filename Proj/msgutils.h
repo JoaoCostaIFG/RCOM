@@ -39,6 +39,8 @@ void printfBuf(unsigned char *buf);
  */
 typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV } transitions_enum;
 
+transitions_enum byteToTransition(char byte);
+
 /* enum: state_enum
  * START:   0
  * FLAG:    1
@@ -51,12 +53,12 @@ typedef enum { START_ST, FLAG_ST, A_ST, C_ST, BCC_ST, STOP_ST } state_enum;
 
 static state_enum event_matrix[][6] = {
     //  FLAG_ST_RCV    A_RCV        C_RCV       BCC_RCV
-    {   FLAG_ST,       START_ST,    START_ST,   START_ST},  // START_ST
-    {   FLAG_ST,       A_ST,        START_ST,   START_ST},  // FLAG_ST
-    {   FLAG_ST,       START_ST,    C_ST,       START_ST},  // A
-    {   FLAG_ST,       START_ST,    START_ST,   BCC_ST},    // C
-    {   STOP_ST,       START_ST,    START_ST,   START_ST},  // BCC
-    {   STOP_ST,       STOP_ST,     STOP_ST,    STOP_ST},   // STOP_ST
+    {FLAG_ST, START_ST, START_ST, START_ST}, // START_ST
+    {FLAG_ST, A_ST, START_ST, START_ST},     // FLAG_ST
+    {FLAG_ST, START_ST, C_ST, START_ST},     // A
+    {FLAG_ST, START_ST, START_ST, BCC_ST},   // C
+    {STOP_ST, START_ST, START_ST, START_ST}, // BCC
+    {STOP_ST, STOP_ST, STOP_ST, STOP_ST},    // STOP_ST
 };
 
 #endif // MSGUTILS_H

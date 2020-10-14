@@ -53,12 +53,14 @@ void alrmHandler(int signo) {
 }
 
 void inputLoop() {
-  int res = 0;
-  while (STOP == FALSE) {
+  state_enum curr_state;
+  char msg;
+
+  while (curr_state != STOP_ST) {
     /* returns after VMIN chars have been input */
-    res += read(fd, buf + res, MSG_SIZE);
-    if (res >= MSG_SIZE)
-      STOP = TRUE;
+    read(fd, &msg, sizeof(char));
+    transitions_enum trans = byteToTransition(msg);
+    curr_state = event_matrix[curr_state][trans];
   }
 
   printf("Received msg: ");
@@ -66,8 +68,7 @@ void inputLoop() {
 
   if (checkBCCField(buf)) {
     printf("Message is OK!\n");
-  }
-  else {
+  } else {
     printf("Message is not OK! BCC field check failed.\n");
     inputLoop(); // TODO
   }

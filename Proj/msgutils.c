@@ -22,3 +22,22 @@ void printfBuf(unsigned char *buf) {
     printf("%X ", buf[i]);
   printf("\n");
 }
+
+transitions_enum byteToTransition(char byte) {
+  transitions_enum trans;
+  switch (byte) {
+  case FLAG:
+    trans = FLAG_RCV;
+    break;
+  case A_RECEIVER:
+    /*case A_SENDER:*/
+    /*TODO halp trans = A_RCV;*/
+    break;
+  case C_SET:
+  case C_RCV:
+  case C_DISC:
+    trans = C_RCV;
+    break;
+  }
+  return trans;
+}
