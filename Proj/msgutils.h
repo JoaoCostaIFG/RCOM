@@ -74,36 +74,47 @@ char destuffByte(char byte);
 int stuffByte(char byte, char res[]);
 
 /* enum: transition
- * FLAG_RCV:  0
+ * F_RCV:  0
  * A_RCV: 1
- * C_RCV:  2
- * BCC_RCV: 3
+ * CI_RCV:  2
+ * CS_RCV: 3
+ * OTHER_RCV : 4
  */
-typedef enum { FLAG_RCV, A_RCV, C_RCV, BCC_RCV, OTHER_RCV } transitions_enum;
+typedef enum {
+  FLAG_RCV = 0,
+  A_RCV = 1,
+  CI_RCV = 2,
+  CS_RCV = 3,
+  BCC_RCV = 4,
+  OTHER_RCV = 5
+} transitions;
 
-/* enum: state_enum
- * START:   0
- * FLAG:    1
- * A:       2
- * C:       3
- * BCC:     4
- * STOP:    4
- */
-typedef enum { START_ST, FLAG_ST, A_ST, C_ST, BCC_ST, STOP_ST } state_enum;
+typedef enum {
+  START_ST = 0,
+  FLAG_ST = 1,
+  A_ST = 2,
+  CS_ST = 3,
+  BCC_ST = 4,
+  CI_ST = 5,
+  D_ST = 6,
+  STOP_ST = 7
+} state;
 
-transitions_enum byteToTransitionSET(char byte, char *buf,
-                                     state_enum curr_state);
-transitions_enum byteToTransitionUA(char byte, char *buf,
-                                    state_enum curr_state);
+transitions byteToTransitionSET(char byte, char *buf, state curr_state);
+transitions byteToTransitionUA(char byte, char *buf, state curr_state);
 
-static state_enum event_matrix[][7] = {
-    //  FLAG_ST_RCV   A_RCV        C_RCV       BCC_RCV   OTHER_RCV
-    {FLAG_ST, START_ST, START_ST, START_ST, START_ST}, // START_ST
-    {FLAG_ST, A_ST, START_ST, START_ST, START_ST},     // FLAG_ST
-    {FLAG_ST, START_ST, C_ST, START_ST, START_ST},     // A
-    {FLAG_ST, START_ST, START_ST, BCC_ST, START_ST},   // C
-    {STOP_ST, START_ST, START_ST, START_ST, START_ST}, // BCC
-    {STOP_ST, STOP_ST, STOP_ST, STOP_ST, STOP_ST},     // STOP_ST
+// clang-format off
+static state info_state_machine[][6] {
+/*  F_RCV     A_RCV     CI_RCV    CS_RCV    BCC_RCV   OTHER_RCV */
+  { FLAG_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // START_ST
+  { FLAG_ST,  A_ST,     START_ST, START_ST, START_ST, START_ST},  // FLAG_ST
+  { FLAG_ST,  START_ST, CI_ST,    CS_ST,    START_ST, START_ST},  // A_ST
+  { FLAG_ST,  START_ST, START_ST, START_ST, BCC_ST,   START_ST},  // CS_ST
+  { STOP_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // BCC_ST
+  { FLAG_ST,  START_ST, START_ST, START_ST, D_ST,     START_ST},  // CI_ST
+  { STOP_ST,  D_ST,     D_ST,     D_ST,     D_ST,     D_ST    },  // D_ST
+  { STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST }   // STOP_ST
 };
+// clang-format on
 
 #endif // MSGUTILS_H
