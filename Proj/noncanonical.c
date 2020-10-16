@@ -30,8 +30,8 @@ void sendUAMsg() {
 void inputLoop() {
   char currByte, buf[MAX_SIZE];
   int res = 0;
-  state_enum curr_state = START_ST;
-  transitions_enum transition;
+  state curr_state = START_ST;
+  transitions transition;
 
   fprintf(stderr, "Getting SET.\n");
   while (curr_state != STOP_ST) {
@@ -40,7 +40,7 @@ void inputLoop() {
       perror("SET read");
 
     transition = byteToTransitionSET(currByte, buf, curr_state);
-    curr_state = event_matrix[curr_state][transition];
+    curr_state = state_machine[curr_state][transition];
   }
   fprintf(stderr, "Got SET.\n");
 }

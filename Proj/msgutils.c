@@ -77,10 +77,9 @@ void printfBuf(char *buf) {
   printf("\n");
 }
 
-transitions_enum byteToTransitionSET(char byte, char *buf,
-                                     state_enum curr_state) {
-  transitions_enum transition;
-  if (curr_state == C_ST && byte == calcBCCField(buf)) {
+transitions byteToTransitionSET(char byte, char *buf, state curr_state) {
+  transitions transition;
+  if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
     buf[BCC_FIELD] = calcBCCField(buf);
   } else {
@@ -92,13 +91,12 @@ transitions_enum byteToTransitionSET(char byte, char *buf,
       else if (curr_state == BCC_ST)
         buf[FLAG2_FIELD] = FLAG;
       break;
-    case A_SENDER:
-      /* also C_SET */
+    case A_SENDER: // also C_SET
       if (curr_state == FLAG_ST) {
         transition = A_RCV;
         buf[A_FIELD] = byte;
       } else if (curr_state == A_ST) {
-        transition = C_RCV;
+        transition = CS_RCV;
         buf[C_FIELD] = byte;
       }
       break;
@@ -111,10 +109,9 @@ transitions_enum byteToTransitionSET(char byte, char *buf,
   return transition;
 }
 
-transitions_enum byteToTransitionUA(char byte, char *buf,
-                                    state_enum curr_state) {
-  transitions_enum transition;
-  if (curr_state == C_ST && byte == calcBCCField(buf)) {
+transitions byteToTransitionUA(char byte, char *buf, state curr_state) {
+  transitions transition;
+  if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
     buf[BCC_FIELD] = calcBCCField(buf);
   } else {
@@ -131,7 +128,7 @@ transitions_enum byteToTransitionUA(char byte, char *buf,
       buf[A_FIELD] = byte;
       break;
     case C_UA:
-      transition = C_RCV;
+      transition = CS_RCV;
       buf[C_FIELD] = byte;
       break;
     default:

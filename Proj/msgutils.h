@@ -104,7 +104,7 @@ transitions byteToTransitionSET(char byte, char *buf, state curr_state);
 transitions byteToTransitionUA(char byte, char *buf, state curr_state);
 
 // clang-format off
-static state info_state_machine[][6] {
+static state state_machine[][6] = {
 /*  F_RCV     A_RCV     CI_RCV    CS_RCV    BCC_RCV   OTHER_RCV */
   { FLAG_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // START_ST
   { FLAG_ST,  A_ST,     START_ST, START_ST, START_ST, START_ST},  // FLAG_ST
