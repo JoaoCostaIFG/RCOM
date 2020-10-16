@@ -52,14 +52,14 @@ void alrmHandler(int signo) {
 }
 
 void inputLoopUA() {
-  char currByte, buf[MAX_SIZE];
+  unsigned char currByte, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
   transitions transition;
 
   fprintf(stderr, "Getting UA.\n");
   while (curr_state != STOP_ST) {
-    res = read(appLayer.fd, &currByte, sizeof(char));
+    res = read(appLayer.fd, &currByte, sizeof(unsigned char));
     if (res <= 0)
       perror("Reading UA");
 
@@ -83,7 +83,7 @@ void sendFile(char *file_name) {
     exit(1);
   }
 
-  char file_content[MAX_SIZE / 2];
+  unsigned char file_content[MAX_SIZE / 2];
   int size = read(fp, file_content, MAX_SIZE / 2);
   while (size > 0) {
     assembleInfoPacket(&linkLayer, file_content, size);
@@ -141,8 +141,8 @@ int main(int argc, char **argv) {
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
     leitura do(s) próximo(s) caracter(es)
   */
-  newtio.c_cc[VTIME] = 0; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 chars received */
+  newtio.c_cc[VTIME] = 0; /* inter-unsigned character timer unused */
+  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 unsigned chars received */
   // clear queue
   tcflush(appLayer.fd, TCIOFLUSH);
 

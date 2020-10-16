@@ -22,7 +22,7 @@ struct linkLayer initLinkLayer() {
   return linkLayer;
 }
 
-void fillByteField(char *buf, enum SUByteField field, char byte) {
+void fillByteField(unsigned char *buf, enum SUByteField field, unsigned char byte) {
   buf[field] = byte;
 }
 
@@ -41,25 +41,25 @@ void assembleOpenPacket(struct linkLayer *linkLayer,
   linkLayer->frameSize = 5;
 }
 
-static char calcBCC2Field(char *buf, int size) {
-  char ret = 0;
+static unsigned char calcBCC2Field(unsigned char *buf, int size) {
+  unsigned char ret = 0;
   for (int i = 0; i < size; ++i)
     ret ^= buf[i];
   return ret;
 }
 
-void assembleInfoPacket(struct linkLayer *linkLayer, char *buf, int size) {
+void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf, int size) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
   fillByteField(linkLayer->frame, C_FIELD, linkLayer->sequenceNumber);
   setBCCField(linkLayer->frame);
 
-  char stuffed_string[MAX_SIZE];
+  unsigned char stuffed_string[MAX_SIZE];
   int new_size = stuffString(buf, stuffed_string, size);
   int i = 4;
   memcpy(linkLayer->frame + i, stuffed_string, new_size);
 
-  char bcc_res[2], bcc = calcBCC2Field(buf, new_size);
+  unsigned char bcc_res[2], bcc = calcBCC2Field(buf, new_size);
   int bcc_size = stuffByte(bcc, bcc_res);
   linkLayer->frame[new_size + (i++)] = bcc_res[0];
 
@@ -71,22 +71,22 @@ void assembleInfoPacket(struct linkLayer *linkLayer, char *buf, int size) {
   linkLayer->frameSize = new_size + i;
 }
 
-void setBCCField(char *buf) {
+void setBCCField(unsigned char *buf) {
   unsigned char bcc = buf[A_FIELD] ^ buf[C_FIELD];
   fillByteField(buf, BCC_FIELD, bcc);
 }
 
-char calcBCCField(char *buf) { return (buf[A_FIELD] ^ buf[C_FIELD]); }
+unsigned char calcBCCField(unsigned char *buf) { return (buf[A_FIELD] ^ buf[C_FIELD]); }
 
-bool checkBCCField(char *buf) { return calcBCCField(buf) == buf[BCC_FIELD]; }
+bool checkBCCField(unsigned char *buf) { return calcBCCField(buf) == buf[BCC_FIELD]; }
 
-void printfBuf(char *buf) {
+void printfBuf(unsigned char *buf) {
   for (int i = 0; i < MAX_SIZE; ++i)
     printf("%X ", buf[i]);
   printf("\n");
 }
 
-transitions byteToTransitionSET(char byte, char *buf, state curr_state) {
+transitions byteToTransitionSET(unsigned char byte, unsigned char *buf, state curr_state) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -111,7 +111,7 @@ transitions byteToTransitionSET(char byte, char *buf, state curr_state) {
   return transition;
 }
 
-transitions byteToTransitionUA(char byte, char *buf, state curr_state) {
+transitions byteToTransitionUA(unsigned char byte, unsigned char *buf, state curr_state) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -135,7 +135,7 @@ transitions byteToTransitionUA(char byte, char *buf, state curr_state) {
   return transition;
 }
 
-transitions byteToTransitionI(char byte, char *buf, state curr_state) {
+transitions byteToTransitionI(unsigned char byte, unsigned char *buf, state curr_state) {
   transitions transition;
   if (curr_state == CI_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -160,7 +160,7 @@ transitions byteToTransitionI(char byte, char *buf, state curr_state) {
   return transition;
 }
 
-int stuffByte(char byte, char res[]) {
+int stuffByte(unsigned char byte, unsigned char res[]) {
   int bytes_returned = 1;
   if (byte == ESC) {
     res[0] = ESC;
@@ -175,12 +175,12 @@ int stuffByte(char byte, char res[]) {
   return bytes_returned;
 }
 
-char destuffByte(char byte) { return byte ^ STUFF_BYTE; }
+unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
 
-int stuffString(char str[], char res[], int size) {
+int stuffString(unsigned char str[], unsigned char res[], int size) {
   int j = 0;
   for (int i = 0; i < size; ++i) {
-    char stuffedBytes[2];
+    unsigned char stuffedBytes[2];
     int n = stuffByte(str[i], stuffedBytes);
     res[j++] = stuffedBytes[0];
     if (n > 1)

@@ -48,31 +48,31 @@ struct linkLayer {
   unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
 
   int frameSize;        /* Tamanho (em bytes) da trama atual */
-  char frame[MAX_SIZE]; /* Trama */
+  unsigned char frame[MAX_SIZE]; /* Trama */
 };
 
 struct linkLayer initLinkLayer();
 
-void fillByteField(char *buf, enum SUByteField field, char byte);
+void fillByteField(unsigned char *buf, enum SUByteField field, unsigned char byte);
 
 void assembleOpenPacket(struct linkLayer *linkLayer,
                         enum applicationStatus appStatus);
 
-void assembleInfoPacket(struct linkLayer *linkLayer, char *buf, int size);
+void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf, int size);
 
-void setBCCField(char *buf);
+void setBCCField(unsigned char *buf);
 
-char calcBCCField(char *buf);
+unsigned char calcBCCField(unsigned char *buf);
 
-bool checkBCCField(char *buf);
+bool checkBCCField(unsigned char *buf);
 
-void printfBuf(char *buf);
+void printfBuf(unsigned char *buf);
 
-int stuffString(char str[], char res[], int size);
+int stuffString(unsigned char str[], unsigned char res[], int size);
 
-char destuffByte(char byte);
+unsigned char destuffByte(unsigned char byte);
 
-int stuffByte(char byte, char res[]);
+int stuffByte(unsigned char byte, unsigned char res[]);
 
 int sendAndAlarm(struct linkLayer* linkLayer, int fd);
 
@@ -103,9 +103,9 @@ typedef enum {
   STOP_ST = 7
 } state;
 
-transitions byteToTransitionSET(char byte, char *buf, state curr_state);
-transitions byteToTransitionUA(char byte, char *buf, state curr_state);
-transitions byteToTransitionI(char byte, char *buf, state curr_state);
+transitions byteToTransitionSET(unsigned char byte, unsigned char *buf, state curr_state);
+transitions byteToTransitionUA(unsigned char byte, unsigned char *buf, state curr_state);
+transitions byteToTransitionI(unsigned char byte, unsigned char *buf, state curr_state);
 
 // clang-format off
 static state state_machine[][6] = {
