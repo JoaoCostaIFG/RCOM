@@ -11,8 +11,12 @@
 #define A_SENDER 0x03   // requests de transmissor e respetivas respostas
 #define A_RECEIVER 0x01 // requests de emissor e respetivas respostas
 #define C_SET 0x03
-#define C_UA 0x07
 #define C_DISC 0x0B
+#define C_UA 0x07
+#define C_RR 0x05
+#define C_REJ 0x01
+#define C_CTRL0 0x00
+#define C_CTRL1 0x40
 #define ESC 0x7d
 #define STUFF_BYTE 0x20
 
@@ -47,9 +51,6 @@ struct linkLayer {
   char frame[MAX_SIZE]; /* Trama */
 };
 
-#define sendCurrPacket(linkLayer, fd)                                          \
-  write(fd, linkLayer.frame, linkLayer.frameSize)
-
 struct linkLayer initLinkLayer();
 
 void fillByteField(char *buf, enum SUByteField field, char byte);
@@ -72,6 +73,8 @@ int stuffString(char str[], char res[], int size);
 char destuffByte(char byte);
 
 int stuffByte(char byte, char res[]);
+
+int sendAndAlarm(struct linkLayer* linkLayer, int fd);
 
 /* enum: transition
  * F_RCV:  0
@@ -102,6 +105,7 @@ typedef enum {
 
 transitions byteToTransitionSET(char byte, char *buf, state curr_state);
 transitions byteToTransitionUA(char byte, char *buf, state curr_state);
+transitions byteToTransitionI(char byte, char *buf, state curr_state);
 
 // clang-format off
 static state state_machine[][6] = {

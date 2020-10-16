@@ -1,7 +1,16 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "msgutils.h"
+
+int sendAndAlarm(struct linkLayer *linkLayer, int fd) {
+  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  // reset and set alarm
+  linkLayer->numTransmissions = MAXATTEMPTS;
+  alarm(linkLayer->timeout);
+  return res;
+}
 
 struct linkLayer initLinkLayer() {
   struct linkLayer linkLayer;
@@ -81,23 +90,16 @@ transitions byteToTransitionSET(char byte, char *buf, state curr_state) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
-    buf[BCC_FIELD] = calcBCCField(buf);
   } else {
     switch (byte) {
     case FLAG:
       transition = FLAG_RCV;
-      if (curr_state == START_ST)
-        buf[FLAG1_FIELD] = FLAG;
-      else if (curr_state == BCC_ST)
-        buf[FLAG2_FIELD] = FLAG;
       break;
-    case A_SENDER: // also C_SET
+    case A_SENDER: // == C_SET
       if (curr_state == FLAG_ST) {
         transition = A_RCV;
-        buf[A_FIELD] = byte;
       } else if (curr_state == A_ST) {
         transition = CS_RCV;
-        buf[C_FIELD] = byte;
       }
       break;
     default:
@@ -113,23 +115,41 @@ transitions byteToTransitionUA(char byte, char *buf, state curr_state) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
-    buf[BCC_FIELD] = calcBCCField(buf);
   } else {
     switch (byte) {
     case FLAG:
       transition = FLAG_RCV;
-      if (curr_state == START_ST)
-        buf[FLAG1_FIELD] = FLAG;
-      else if (curr_state == BCC_ST)
-        buf[FLAG2_FIELD] = FLAG;
       break;
     case A_SENDER:
       transition = A_RCV;
-      buf[A_FIELD] = byte;
       break;
     case C_UA:
       transition = CS_RCV;
-      buf[C_FIELD] = byte;
+      break;
+    default:
+      transition = OTHER_RCV;
+      break;
+    }
+  }
+
+  return transition;
+}
+
+transitions byteToTransitionI(char byte, char *buf, state curr_state) {
+  transitions transition;
+  if (curr_state == CI_ST && byte == calcBCCField(buf)) {
+    transition = BCC_RCV;
+  } else {
+    switch (byte) {
+    case FLAG:
+      transition = FLAG_RCV;
+      break;
+    case A_SENDER:
+      transition = A_RCV;
+      break;
+    case C_CTRL0:
+    case C_CTRL1:
+      transition = CI_RCV;
       break;
     default:
       transition = OTHER_RCV;

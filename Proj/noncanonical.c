@@ -23,13 +23,18 @@ void sendUAMsg() {
 
   // send msg
   fprintf(stderr, "Sending UA.\n");
+  /* if (sendAndAlarm(&linkLayer, appLayer.fd) < 0) { */
   int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
+  if (res < 0) {
+    perror("Failed sending UA");
+    exit(1);
+  }
   fprintf(stderr, "Sent UA.\n");
 }
 
-void inputLoop() {
+void inputLoopSET() {
   char currByte, buf[MAX_SIZE];
-  int res = 0;
+  int res = 0, bufLen = 0;
   state curr_state = START_ST;
   transitions transition;
 
@@ -41,8 +46,45 @@ void inputLoop() {
 
     transition = byteToTransitionSET(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
+
+    if (curr_state == START_ST)
+      bufLen = 0;
+    else
+      buf[bufLen++] = currByte;
   }
   fprintf(stderr, "Got SET.\n");
+}
+
+void getFile() {
+  char currByte, buf[MAX_SIZE];
+  int res = 0, bufLen = 0;
+  bool isNextEscape = false;
+  state curr_state = START_ST;
+  transitions transition;
+
+  while (curr_state != STOP_ST) {
+    res = read(appLayer.fd, &currByte, sizeof(char));
+    if (res <= 0) {
+      break;
+    }
+
+    transition = byteToTransitionI(currByte, buf, curr_state);
+    curr_state = state_machine[curr_state][transition];
+
+    if (curr_state == START_ST) {
+      bufLen = 0;
+    } else {
+      if (isNextEscape) {
+        --bufLen;
+        currByte = destuffByte(currByte);
+        isNextEscape = false;
+      } else if (currByte == ESC) {
+        isNextEscape = true;
+      }
+
+      buf[bufLen++] = currByte;
+    }
+  }
 }
 
 int main(int argc, char **argv) {
@@ -95,32 +137,9 @@ int main(int argc, char **argv) {
   }
 
   // read string
-  inputLoop();
+  inputLoopSET();
   sendUAMsg();
-
-  int res;
-  char currByte;
-  bool escapeRoom = false;
-  while (1) {
-    res = read(appLayer.fd, &currByte, sizeof(char));
-    if (res <= 0) {
-      break;
-    }
-
-    if (escapeRoom) {
-      currByte = destuffByte(currByte);
-      printf("%c:%X ", currByte, currByte);
-      escapeRoom = false;
-    } else {
-      if (currByte == ESC)
-        escapeRoom = true;
-      else
-        printf("%c:%X ", currByte, currByte);
-    }
-
-    fflush(stdout);
-  }
-  printf("\n");
+  getFile();
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)

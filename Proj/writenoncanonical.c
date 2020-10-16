@@ -22,9 +22,12 @@ static struct linkLayer linkLayer;
 void sendSetMsg() {
   assembleOpenPacket(&linkLayer, appLayer.status);
 
-  // send msg
+  // send msg and set alarm for timeout/retry
   fprintf(stderr, "Sending SET.\n");
-  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
+  if (sendAndAlarm(&linkLayer, appLayer.fd) < 0) {
+    perror("Failed sending SET");
+    exit(1);
+  }
   fprintf(stderr, "Sent SET.\n");
 }
 
@@ -38,13 +41,19 @@ void alrmHandler(int signo) {
   }
 
   --linkLayer.numTransmissions;
-  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
-  alarm(TIMEOUT);
+  if (linkLayer.numTransmissions <= 0) {
+    fprintf(stderr, "Ran out of attempts.\n");
+    exit(1);
+  }
+  if (write(appLayer.fd, linkLayer.frame, linkLayer.frameSize) < 0) {
+    perror("Failed re-sending last message");
+    exit(1);
+  }
 }
 
-void inputLoop() {
+void inputLoopUA() {
   char currByte, buf[MAX_SIZE];
-  int res = 0;
+  int res = 0, bufLen = 0;
   state curr_state = START_ST;
   transitions transition;
 
@@ -52,13 +61,36 @@ void inputLoop() {
   while (curr_state != STOP_ST) {
     res = read(appLayer.fd, &currByte, sizeof(char));
     if (res <= 0)
-      perror("UA read.");
+      perror("Reading UA");
 
     transition = byteToTransitionUA(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
+    
+    if (curr_state == START_ST)
+      bufLen = 0;
+    else
+      buf[bufLen++] = currByte;
   }
   alarm(0); // cancel pending alarm
   fprintf(stderr, "Got UA.\n");
+}
+
+#define FILETOSEND "pinguim.gif2"
+void sendFile(char *file_name) {
+  int fp = open(file_name, O_RDONLY);
+  if (fp < 0) {
+    perror(FILETOSEND);
+    exit(1);
+  }
+
+  char file_content[MAX_SIZE / 2];
+  int size = read(fp, file_content, MAX_SIZE / 2);
+  while (size > 0) {
+    assembleInfoPacket(&linkLayer, file_content, size);
+    sendAndAlarm(&linkLayer, appLayer.fd);
+    size = read(fp, file_content, MAX_SIZE / 2);
+  }
+  alarm(0); // reset pending alarm
 }
 
 int main(int argc, char **argv) {
@@ -121,11 +153,8 @@ int main(int argc, char **argv) {
   }
 
   sendSetMsg();
-  alarm(linkLayer.timeout); // set alarm for timeout/retry
-  inputLoop();
-
-  assembleInfoPacket(&linkLayer, "Ola~Mundo!", 10);
-  int res = sendCurrPacket(linkLayer, appLayer.fd);
+  inputLoopUA();
+  sendFile(FILETOSEND);
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
