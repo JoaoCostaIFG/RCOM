@@ -83,6 +83,13 @@ void inputLoopSET() {
 }
 
 void getFile() {
+  size_t fileSize = 0, fileMaxSize = MAX_SIZE;
+  unsigned char *file_content = malloc(fileMaxSize * sizeof(unsigned char));
+  if (file_content == NULL) {
+    perror("Malloc doesn't like us, goodbye!");
+    exit(-1);
+  }
+
   unsigned char currByte, buf[MAX_SIZE];
   int res, bufLen;
   bool isNextEscape;
@@ -133,12 +140,25 @@ void getFile() {
     } else if (buf[C_FIELD] == C_CTRL0)
       isOk = false;
 
-    if (isOk)
+    if (isOk) {
       sendRRMsg();
-    else
-      sendREJMsg();
+      if (fileSize + bufLen - 6 >= fileMaxSize) {
+        // increase alloced size
+        fileMaxSize *= 2;
+        file_content = realloc(file_content, fileMaxSize * sizeof(unsigned char));
+        if (file_content == NULL) {
+          perror("Realloc also doesn't like us, goodbye!");
+          exit(-1);
+        }
+      }
 
-    write(STDOUT_FILENO, buf + 4, bufLen - 6);
+      memcpy(file_content + fileSize, buf + 4, (bufLen - 6) * sizeof(unsigned char));
+      fileSize += bufLen - 6;
+    } else {
+      sendREJMsg();
+    }
+
+    printf("%s\n", file_content);
   }
 }
 
