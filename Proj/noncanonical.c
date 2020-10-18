@@ -19,7 +19,7 @@ static struct applicationLayer appLayer;
 static struct linkLayer linkLayer;
 
 void sendUAMsg() {
-  assembleOpenPacket(&linkLayer, appLayer.status);
+  assembleSUPacket(&linkLayer, UA_MSG);
 
   // send msg
   fprintf(stderr, "Sending UA.\n");
@@ -30,6 +30,33 @@ void sendUAMsg() {
     exit(1);
   }
   fprintf(stderr, "Sent UA.\n");
+}
+
+void sendRRMsg() {
+  FLIPSEQUENCENUMBER(linkLayer);
+  assembleSUPacket(&linkLayer, RR_MSG);
+
+  // send msg
+  fprintf(stderr, "Sending RR %d.\n", linkLayer.sequenceNumber);
+  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
+  if (res < 0) {
+    perror("Failed sending RR");
+    exit(1);
+  }
+  fprintf(stderr, "Sent RR %d.\n", linkLayer.sequenceNumber);
+}
+
+void sendREJMsg() {
+  assembleSUPacket(&linkLayer, REJ_MSG);
+
+  // send msg
+  fprintf(stderr, "Sending REJ %d.\n", linkLayer.sequenceNumber);
+  int res = write(appLayer.fd, linkLayer.frame, linkLayer.frameSize);
+  if (res < 0) {
+    perror("Failed sending REJ");
+    exit(1);
+  }
+  fprintf(stderr, "Sent REJ %d.\n", linkLayer.sequenceNumber);
 }
 
 void inputLoopSET() {
@@ -57,33 +84,61 @@ void inputLoopSET() {
 
 void getFile() {
   unsigned char currByte, buf[MAX_SIZE];
-  int res = 0, bufLen = 0;
-  bool isNextEscape = false;
-  state curr_state = START_ST;
+  int res, bufLen;
+  bool isNextEscape;
   transitions transition;
+  state curr_state;
 
-  while (curr_state != STOP_ST) {
-    res = read(appLayer.fd, &currByte, sizeof(unsigned char));
-    if (res <= 0) {
-      break;
-    }
+  while (1) {
+    bufLen = 0;
+    isNextEscape = false;
+    curr_state = START_ST;
 
-    transition = byteToTransitionI(currByte, buf, curr_state);
-    curr_state = state_machine[curr_state][transition];
-
-    if (curr_state == START_ST) {
-      bufLen = 0;
-    } else {
-      if (isNextEscape) {
-        --bufLen;
-        currByte = destuffByte(currByte);
-        isNextEscape = false;
-      } else if (currByte == ESC) {
-        isNextEscape = true;
+    while (curr_state != STOP_ST) {
+      res = read(appLayer.fd, &currByte, sizeof(unsigned char));
+      if (res <= 0) {
+        break;
       }
 
-      buf[bufLen++] = currByte;
+      transition = byteToTransitionI(currByte, buf, curr_state);
+      curr_state = state_machine[curr_state][transition];
+
+      if (curr_state == START_ST) {
+        bufLen = 0;
+      } else {
+        if (isNextEscape) {
+          --bufLen;
+          currByte = destuffByte(currByte);
+          isNextEscape = false;
+        } else if (currByte == ESC) {
+          isNextEscape = true;
+        }
+
+        buf[bufLen++] = currByte;
+      }
+
+      printf("%x - %d\n", currByte, curr_state);
     }
+
+    bool isOk = true;
+    if (!checkBCC2Field(buf + 4, bufLen - 6)) { // BCC2 is not ok
+      fprintf(stderr, "BCC2 is not OK!");
+      isOk = false;
+    }
+
+    // Check sequence number for missed/duplicate packets
+    if (linkLayer.sequenceNumber == 0) {
+      if (buf[C_FIELD] == C_CTRL1)
+        isOk = false;
+    } else if (buf[C_FIELD] == C_CTRL0)
+      isOk = false;
+
+    if (isOk)
+      sendRRMsg();
+    else
+      sendREJMsg();
+
+    write(STDOUT_FILENO, buf + 4, bufLen - 6);
   }
 }
 

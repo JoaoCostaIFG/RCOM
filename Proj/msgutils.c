@@ -6,10 +6,15 @@
 
 int sendAndAlarm(struct linkLayer *linkLayer, int fd) {
   int res = write(fd, linkLayer->frame, linkLayer->frameSize);
-  // reset and set alarm
-  linkLayer->numTransmissions = MAXATTEMPTS;
+  // set alarm
   alarm(linkLayer->timeout);
   return res;
+}
+
+int sendAndAlarmReset(struct linkLayer* linkLayer, int fd) {
+  // reset attempts
+  linkLayer->numTransmissions = MAXATTEMPTS;
+  return sendAndAlarm(linkLayer, fd);
 }
 
 struct linkLayer initLinkLayer() {
@@ -22,36 +27,62 @@ struct linkLayer initLinkLayer() {
   return linkLayer;
 }
 
-void fillByteField(unsigned char *buf, enum SUByteField field, unsigned char byte) {
+void fillByteField(unsigned char *buf, enum SUByteField field,
+                   unsigned char byte) {
   buf[field] = byte;
 }
 
-void assembleOpenPacket(struct linkLayer *linkLayer,
-                        enum applicationStatus appStatus) {
+void assembleSUPacket(struct linkLayer *linkLayer,
+                      enum SUMessageType messageType) {
+  // TODO
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
-  if (appStatus == TRANSMITTER) {
-    fillByteField(linkLayer->frame, C_FIELD, C_SET);
-  } else {
-    fillByteField(linkLayer->frame, C_FIELD, C_UA);
-  }
   fillByteField(linkLayer->frame, FLAG2_FIELD, FLAG);
-  setBCCField(linkLayer->frame);
 
+  // set C_FIELD
+  switch (messageType) {
+  case SET_MSG:
+    fillByteField(linkLayer->frame, C_FIELD, C_SET);
+    break;
+  case DISC_MSG:
+    fillByteField(linkLayer->frame, C_FIELD, C_DISC);
+    break;
+  case UA_MSG:
+    fillByteField(linkLayer->frame, C_FIELD, C_UA);
+    break;
+  case RR_MSG:
+    fillByteField(linkLayer->frame, C_FIELD,
+                  C_RR | (linkLayer->sequenceNumber << 7));
+    break;
+  case REJ_MSG:
+    fillByteField(linkLayer->frame, C_FIELD,
+                  C_REJ | (linkLayer->sequenceNumber << 7));
+    break;
+  default: // ?
+    fillByteField(linkLayer->frame, C_FIELD, 0);
+    break;
+  }
+
+  setBCCField(linkLayer->frame);
   linkLayer->frameSize = 5;
 }
 
-static unsigned char calcBCC2Field(unsigned char *buf, int size) {
+unsigned char calcBCC2Field(unsigned char *buf, int size) {
   unsigned char ret = 0;
   for (int i = 0; i < size; ++i)
     ret ^= buf[i];
   return ret;
 }
 
-void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf, int size) {
+bool checkBCC2Field(unsigned char *buf, int size) {
+  return calcBCC2Field(buf, size) == buf[size];
+}
+
+void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+                        int size) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
-  fillByteField(linkLayer->frame, C_FIELD, linkLayer->sequenceNumber);
+  fillByteField(linkLayer->frame, C_FIELD, (linkLayer->sequenceNumber << 6));
   setBCCField(linkLayer->frame);
 
   unsigned char stuffed_string[MAX_SIZE];
@@ -59,7 +90,7 @@ void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf, int siz
   int i = 4;
   memcpy(linkLayer->frame + i, stuffed_string, new_size);
 
-  unsigned char bcc_res[2], bcc = calcBCC2Field(buf, new_size);
+  unsigned char bcc_res[2], bcc = calcBCC2Field(buf, size);
   int bcc_size = stuffByte(bcc, bcc_res);
   linkLayer->frame[new_size + (i++)] = bcc_res[0];
 
@@ -76,9 +107,13 @@ void setBCCField(unsigned char *buf) {
   fillByteField(buf, BCC_FIELD, bcc);
 }
 
-unsigned char calcBCCField(unsigned char *buf) { return (buf[A_FIELD] ^ buf[C_FIELD]); }
+unsigned char calcBCCField(unsigned char *buf) {
+  return (buf[A_FIELD] ^ buf[C_FIELD]);
+}
 
-bool checkBCCField(unsigned char *buf) { return calcBCCField(buf) == buf[BCC_FIELD]; }
+bool checkBCCField(unsigned char *buf) {
+  return calcBCCField(buf) == buf[BCC_FIELD];
+}
 
 void printfBuf(unsigned char *buf) {
   for (int i = 0; i < MAX_SIZE; ++i)
@@ -86,7 +121,8 @@ void printfBuf(unsigned char *buf) {
   printf("\n");
 }
 
-transitions byteToTransitionSET(unsigned char byte, unsigned char *buf, state curr_state) {
+transitions byteToTransitionSET(unsigned char byte, unsigned char *buf,
+                                state curr_state) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -111,7 +147,8 @@ transitions byteToTransitionSET(unsigned char byte, unsigned char *buf, state cu
   return transition;
 }
 
-transitions byteToTransitionUA(unsigned char byte, unsigned char *buf, state curr_state) {
+transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
+                               state curr_state) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -135,9 +172,11 @@ transitions byteToTransitionUA(unsigned char byte, unsigned char *buf, state cur
   return transition;
 }
 
-transitions byteToTransitionI(unsigned char byte, unsigned char *buf, state curr_state) {
+transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
+                              state curr_state) {
   transitions transition;
   if (curr_state == CI_ST && byte == calcBCCField(buf)) {
+    // TODO mandar REJ?
     transition = BCC_RCV;
   } else {
     switch (byte) {
@@ -150,6 +189,34 @@ transitions byteToTransitionI(unsigned char byte, unsigned char *buf, state curr
     case C_CTRL0:
     case C_CTRL1:
       transition = CI_RCV;
+      break;
+    default:
+      transition = OTHER_RCV;
+      break;
+    }
+  }
+
+  return transition;
+}
+
+transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
+                               state curr_state) {
+  transitions transition;
+  if (curr_state == CS_ST && byte == calcBCCField(buf)) {
+    transition = BCC_RCV;
+  } else {
+    switch (byte) {
+    case FLAG:
+      transition = FLAG_RCV;
+      break;
+    case A_SENDER:
+      transition = A_RCV;
+      break;
+    case C_RR:
+    case C_RR | (1 << 7):
+    case C_REJ:
+    case C_REJ | (1 << 7):
+      transition = CS_RCV;
       break;
     default:
       transition = OTHER_RCV;

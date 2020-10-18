@@ -21,9 +21,11 @@
 #define STUFF_BYTE 0x20
 
 #define MAX_SIZE 256 // in Bytes
-#define TIMEOUT 1    // seconds between answers
+#define TIMEOUT 3    // seconds between answers
 #define MAXATTEMPTS 3
 #define BAUDRATE B38400
+
+enum SUMessageType { SET_MSG, DISC_MSG, UA_MSG, RR_MSG, REJ_MSG };
 
 enum SUByteField {
   FLAG1_FIELD = 0,
@@ -47,24 +49,33 @@ struct linkLayer {
   unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
   unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
 
-  int frameSize;        /* Tamanho (em bytes) da trama atual */
+  int frameSize;                 /* Tamanho (em bytes) da trama atual */
   unsigned char frame[MAX_SIZE]; /* Trama */
 };
 
 struct linkLayer initLinkLayer();
 
-void fillByteField(unsigned char *buf, enum SUByteField field, unsigned char byte);
+#define FLIPSEQUENCENUMBER(linkLayer)                                          \
+  linkLayer.sequenceNumber = (linkLayer.sequenceNumber == 0 ? 1 : 0);
 
-void assembleOpenPacket(struct linkLayer *linkLayer,
-                        enum applicationStatus appStatus);
+void fillByteField(unsigned char *buf, enum SUByteField field,
+                   unsigned char byte);
 
-void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf, int size);
+void assembleSUPacket(struct linkLayer *linkLayer,
+                      enum SUMessageType messageType);
+
+void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+                        int size);
 
 void setBCCField(unsigned char *buf);
 
 unsigned char calcBCCField(unsigned char *buf);
 
 bool checkBCCField(unsigned char *buf);
+
+unsigned char calcBCC2Field(unsigned char *buf, int size);
+
+bool checkBCC2Field(unsigned char *buf, int size);
 
 void printfBuf(unsigned char *buf);
 
@@ -74,7 +85,9 @@ unsigned char destuffByte(unsigned char byte);
 
 int stuffByte(unsigned char byte, unsigned char res[]);
 
-int sendAndAlarm(struct linkLayer* linkLayer, int fd);
+int sendAndAlarm(struct linkLayer *linkLayer, int fd);
+
+int sendAndAlarmReset(struct linkLayer* linkLayer, int fd);
 
 /* enum: transition
  * F_RCV:  0
@@ -103,9 +116,14 @@ typedef enum {
   STOP_ST = 7
 } state;
 
-transitions byteToTransitionSET(unsigned char byte, unsigned char *buf, state curr_state);
-transitions byteToTransitionUA(unsigned char byte, unsigned char *buf, state curr_state);
-transitions byteToTransitionI(unsigned char byte, unsigned char *buf, state curr_state);
+transitions byteToTransitionSET(unsigned char byte, unsigned char *buf,
+                                state curr_state);
+transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
+                               state curr_state);
+transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
+                              state curr_state);
+transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
+                              state curr_state);
 
 // clang-format off
 static state state_machine[][6] = {

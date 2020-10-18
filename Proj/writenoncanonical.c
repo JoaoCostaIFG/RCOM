@@ -20,11 +20,11 @@ static struct applicationLayer appLayer;
 static struct linkLayer linkLayer;
 
 void sendSetMsg() {
-  assembleOpenPacket(&linkLayer, appLayer.status);
+  assembleSUPacket(&linkLayer, SET_MSG);
 
   // send msg and set alarm for timeout/retry
   fprintf(stderr, "Sending SET.\n");
-  if (sendAndAlarm(&linkLayer, appLayer.fd) < 0) {
+  if (sendAndAlarmReset(&linkLayer, appLayer.fd) < 0) {
     perror("Failed sending SET");
     exit(1);
   }
@@ -35,17 +35,13 @@ void alrmHandler(int signo) {
   if (signo != SIGALRM)
     return;
 
-  if (linkLayer.numTransmissions <= 0) {
-    fprintf(stderr, "Waiting for answer timedout\n");
-    exit(-1);
-  }
-
   --linkLayer.numTransmissions;
   if (linkLayer.numTransmissions <= 0) {
-    fprintf(stderr, "Ran out of attempts.\n");
+    fprintf(stderr, "Waiting for answer timedout\n");
     exit(1);
   }
-  if (write(appLayer.fd, linkLayer.frame, linkLayer.frameSize) < 0) {
+
+  if (sendAndAlarm(&linkLayer, appLayer.fd) < 0) {
     perror("Failed re-sending last message");
     exit(1);
   }
@@ -65,7 +61,7 @@ void inputLoopUA() {
 
     transition = byteToTransitionUA(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
-    
+
     if (curr_state == START_ST)
       bufLen = 0;
     else
@@ -83,14 +79,55 @@ void sendFile(char *file_name) {
     exit(1);
   }
 
-  unsigned char file_content[MAX_SIZE / 2];
-  int size = read(fp, file_content, MAX_SIZE / 2);
+  /* unsigned char file_content[MAX_SIZE / 2]; */
+  /* int size = read(fp, file_content, MAX_SIZE / 2); */
+  unsigned char file_content[2];
+  int size = read(fp, file_content, 2);
   while (size > 0) {
+    // send info fragment
     assembleInfoPacket(&linkLayer, file_content, size);
-    sendAndAlarm(&linkLayer, appLayer.fd);
-    size = read(fp, file_content, MAX_SIZE / 2);
+    sendAndAlarmReset(&linkLayer, appLayer.fd);
+    /* size = read(fp, file_content, MAX_SIZE / 2); */
+    size = read(fp, file_content, 2);
+
+    // Get RR/REJ answer
+    int nextSeqNum = linkLayer.sequenceNumber == 0 ? 1 : 0;
+    bool okAnswer = false;
+    while (!okAnswer) {
+      fprintf(stderr, "Getting RR/REJ %d.\n", linkLayer.sequenceNumber);
+
+      unsigned char currByte, buf[MAX_SIZE];
+      int res, bufLen = 0;
+      state curr_state = START_ST;
+      transitions transition;
+
+      while (curr_state != STOP_ST) {
+        res = read(appLayer.fd, &currByte, sizeof(unsigned char));
+        if (res <= 0)
+          perror("RR/REJ read");
+
+        transition = byteToTransitionRR(currByte, buf, curr_state);
+        curr_state = state_machine[curr_state][transition];
+
+        if (curr_state == START_ST)
+          bufLen = 0;
+        else
+          buf[bufLen++] = currByte;
+      }
+
+      if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) {
+        okAnswer = true;
+        FLIPSEQUENCENUMBER(linkLayer);
+      }
+      else if (buf[C_FIELD] == (C_REJ | (nextSeqNum << 7))) {
+        // reset attempts (we got an answer)
+        linkLayer.numTransmissions = MAXATTEMPTS;
+      }
+
+      fprintf(stderr, "Got RR/REJ %d.\n", linkLayer.sequenceNumber);
+    }
+    alarm(0); // reset pending alarm
   }
-  alarm(0); // reset pending alarm
 }
 
 int main(int argc, char **argv) {
