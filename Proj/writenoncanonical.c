@@ -79,19 +79,16 @@ void sendFile(char *file_name) {
     exit(1);
   }
 
-  /* unsigned char file_content[MAX_SIZE / 2]; */
-  /* int size = read(fp, file_content, MAX_SIZE / 2); */
-  unsigned char file_content[2];
-  int size = read(fp, file_content, 2);
+  unsigned char file_content[MAX_SIZE / 2];
+  int size = read(fp, file_content, MAX_SIZE / 2);
   while (size > 0) {
     // send info fragment
     assembleInfoPacket(&linkLayer, file_content, size);
     sendAndAlarmReset(&linkLayer, appLayer.fd);
-    /* size = read(fp, file_content, MAX_SIZE / 2); */
-    size = read(fp, file_content, 2);
+    size = read(fp, file_content, MAX_SIZE / 2);
 
     // Get RR/REJ answer
-    int nextSeqNum = linkLayer.sequenceNumber == 0 ? 1 : 0;
+    int nextSeqNum = NEXTSEQUENCENUMBER(linkLayer);
     bool okAnswer = false;
     while (!okAnswer) {
       fprintf(stderr, "Getting RR/REJ %d.\n", linkLayer.sequenceNumber);
@@ -118,14 +115,15 @@ void sendFile(char *file_name) {
       if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) {
         okAnswer = true;
         FLIPSEQUENCENUMBER(linkLayer);
+        fprintf(stderr, "Got RR %d.\n", linkLayer.sequenceNumber);
       }
       else if (buf[C_FIELD] == (C_REJ | (nextSeqNum << 7))) {
         // reset attempts (we got an answer)
         linkLayer.numTransmissions = MAXATTEMPTS;
+        fprintf(stderr, "Got REJ %d.\n", linkLayer.sequenceNumber);
       }
-
-      fprintf(stderr, "Got RR/REJ %d.\n", linkLayer.sequenceNumber);
     }
+
     alarm(0); // reset pending alarm
   }
 }

@@ -58,6 +58,9 @@ struct linkLayer initLinkLayer();
 #define FLIPSEQUENCENUMBER(linkLayer)                                          \
   linkLayer.sequenceNumber = (linkLayer.sequenceNumber == 0 ? 1 : 0);
 
+#define NEXTSEQUENCENUMBER(linkLayer)                                          \
+  (linkLayer.sequenceNumber == 0 ? 1 : 0);
+
 void fillByteField(unsigned char *buf, enum SUByteField field,
                    unsigned char byte);
 

@@ -14,6 +14,11 @@
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
+struct rcv_file {
+  unsigned char *file_content;
+  size_t file_size;
+};
+
 volatile int STOP = false;
 static struct applicationLayer appLayer;
 static struct linkLayer linkLayer;
@@ -82,10 +87,13 @@ void inputLoopSET() {
   fprintf(stderr, "Got SET.\n");
 }
 
-void getFile() {
-  size_t fileSize = 0, fileMaxSize = MAX_SIZE;
-  unsigned char *file_content = malloc(fileMaxSize * sizeof(unsigned char));
-  if (file_content == NULL) {
+struct rcv_file getFile() {
+  size_t fileMaxSize = MAX_SIZE;
+  struct rcv_file rcv_file;
+  rcv_file.file_size = 0;
+  rcv_file.file_content = malloc(fileMaxSize * sizeof(unsigned char));
+
+  if (rcv_file.file_content == NULL) {
     perror("Malloc doesn't like us, goodbye!");
     exit(-1);
   }
@@ -123,8 +131,6 @@ void getFile() {
 
         buf[bufLen++] = currByte;
       }
-
-      printf("%x - %d\n", currByte, curr_state);
     }
 
     bool isOk = true;
@@ -142,24 +148,26 @@ void getFile() {
 
     if (isOk) {
       sendRRMsg();
-      if (fileSize + bufLen - 6 >= fileMaxSize) {
+      if (rcv_file.file_size + bufLen - 6 >= fileMaxSize) {
         // increase alloced size
         fileMaxSize *= 2;
-        file_content = realloc(file_content, fileMaxSize * sizeof(unsigned char));
-        if (file_content == NULL) {
+        rcv_file.file_content =
+            realloc(rcv_file.file_content, fileMaxSize * sizeof(unsigned char));
+        if (rcv_file.file_content == NULL) {
           perror("Realloc also doesn't like us, goodbye!");
           exit(-1);
         }
       }
 
-      memcpy(file_content + fileSize, buf + 4, (bufLen - 6) * sizeof(unsigned char));
-      fileSize += bufLen - 6;
+      memcpy(rcv_file.file_content + rcv_file.file_size, buf + 4,
+             (bufLen - 6) * sizeof(unsigned char));
+      rcv_file.file_size += bufLen - 6;
     } else {
       sendREJMsg();
     }
-
-    printf("%s\n", file_content);
   }
+
+  return rcv_file;
 }
 
 int main(int argc, char **argv) {
@@ -214,7 +222,16 @@ int main(int argc, char **argv) {
   // read string
   inputLoopSET();
   sendUAMsg();
-  getFile();
+  struct rcv_file rcv_file = getFile();
+
+  FILE *fp = fopen("carlos.gif", "w+");
+  if (fp == NULL) {
+    perror("carlos.gif");
+  } else {
+    fwrite(rcv_file.file_content, sizeof(unsigned char), rcv_file.file_size, fp);
+    fclose(fp);
+  }
+  free(rcv_file.file_content);
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
