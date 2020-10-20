@@ -10,11 +10,19 @@
 #define T_SIZE 0
 #define T_NAME 1
 
+/* Packet Headers */
+#define C_CONTROL 0
+#define SEQ_NUMBER 1
+#define L2 2
+#define L1 3
+
 enum applicationStatus { TRANSMITTER, RECEIVER };
 
 struct applicationLayer {
   int fd; /* file descriptor correspondente a porta serie */
   enum applicationStatus status;
+  char *file_name;
+  long file_size;
 };
 
 // int llopen(int porta, enum applicationStatus appStatus);

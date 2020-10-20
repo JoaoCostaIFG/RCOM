@@ -9,6 +9,8 @@
 
 static struct linkLayer linkLayer;
 static struct termios oldtio;
+static long fileSize;
+static char *fileName;
 
 // TODO char* porta ou int porta
 int llopen(char *porta, enum applicationStatus appStatus) {
@@ -129,10 +131,10 @@ int llwrite(int fd, char *buffer, int length) {
     return -1;
   }
 
-  packet[0] = C_DATA;
-  packet[1] = n;
-  packet[2] = (unsigned char)(length % 256);
-  packet[3] = (unsigned char)(length - packet[2] * 256);
+  packet[C_CONTROL] = C_DATA;
+  packet[SEQ_NUMBER] = n;
+  packet[L2] = (unsigned char)(length % 256);
+  packet[L1] = (unsigned char)(length - packet[2] * 256);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
   if (sendPacket(&linkLayer, fd, packet, new_length) < 0) {
@@ -144,7 +146,79 @@ int llwrite(int fd, char *buffer, int length) {
 }
 
 int llread(int fd, char *buffer) {
-  // TODO memcmp
+  static unsigned char n = 255; // unsigned integer overflow is defined >:(
+  ++n;
+
+  unsigned char *packet = NULL;
+  int packet_length = getPacket(&linkLayer, fd, packet);
+
+  if (packet_length < 0)
+    return -1; // Morreu mesmo
+  else if (packet_length == 0)
+    return -2; // Morreu só neste
+
+  if (packet[C_CONTROL] == C_DATA) {
+    if (packet[SEQ_NUMBER] != n) { // Invalid sequence number
+      free(packet);
+      return -2;
+    }
+
+    int expected_length = packet[L2] * 256 + L1;
+    if (expected_length != packet_length) {
+      free(packet);
+      return -2;
+    }
+
+    return 0;
+  } else if (packet[C_CONTROL] == C_START || packet[C_CONTROL] == C_END) {
+
+    int curr_ind = C_CONTROL + 1;
+    int type_size = packet[curr_ind++];
+    if (type_size != T_SIZE) {
+      free(packet);
+      return -4;
+    }
+    int length_size = packet[curr_ind++];
+    long packet_length;
+    memcpy(&packet_length, packet + curr_ind, length_size);
+    curr_ind += length_size;
+
+    int type_name = packet[curr_ind++];
+    if (type_name != T_NAME) {
+      free(packet);
+      return -5;
+    }
+    int length_name = packet[curr_ind++];
+    char *packet_file_name = (char *)malloc(length_name * sizeof(char));
+
+    if (packet[C_CONTROL] == C_START) {
+      fileName = packet_file_name;
+      fileSize = packet_length;
+
+      return 1;
+    } else { // C_END
+      if (strcmp(packet_file_name, fileName) != 0) {
+        free(packet);
+        free(packet_file_name);
+        free(fileName);
+        return -6;
+      }
+      free(packet_file_name);
+
+      if (packet_length != fileSize) {
+        free(packet);
+        free(fileName);
+        return -6;
+      }
+
+      return 2;
+    }
+
+  } else {
+    free(packet);
+    return -3; // Unexpected C header
+  }
+
   return 0;
 }
 
