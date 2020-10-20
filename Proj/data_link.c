@@ -441,6 +441,88 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
+int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
+  int max_buf_size = MAX_SIZE;
+  unsigned char *buf =
+      (unsigned char *)malloc(sizeof(unsigned char) * max_buf_size);
+  if (buf == NULL) {
+    perror("getPacket malloc");
+    return -1;
+  }
+
+  int bufLen = 0;
+  bool isNextEscape = false;
+  state curr_state = START_ST;
+  unsigned char currByte;
+  transitions transition;
+
+  while (curr_state != STOP_ST) {
+    int res = read(fd, &currByte, sizeof(unsigned char));
+    if (res <= 0) {
+      perror("getPacket read");
+      return -2;
+    }
+
+    transition = byteToTransitionI(currByte, buf, curr_state);
+    curr_state = state_machine[curr_state][transition];
+
+    if (curr_state == START_ST) {
+      bufLen = 0;
+    } else {
+      if (isNextEscape) {
+        --bufLen;
+        currByte = destuffByte(currByte);
+        isNextEscape = false;
+      } else if (currByte == ESC) {
+        isNextEscape = true;
+      }
+
+      buf[bufLen++] = currByte;
+    }
+
+    if (bufLen >= max_buf_size) {
+      bufLen *= 2;
+      buf = (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
+      if (buf == NULL) {
+        perror("getPacket realloc");
+        return -3;
+      }
+    }
+  }
+
+  bool isOk = true;
+  if (!checkBCC2Field(buf + 4, bufLen - 6)) {
+    // BCC2 is not ok
+    fprintf(stderr, "BCC2 is not OK!");
+    isOk = false;
+  }
+
+  // Check sequence number for missed/duplicate packets
+  if (linkLayer->sequenceNumber == 0) {
+    if (buf[C_FIELD] == C_CTRL1)
+      isOk = false;
+  } else if (buf[C_FIELD] == C_CTRL0)
+    isOk = false;
+
+  if (isOk) {
+    sendRRMsg(linkLayer, fd);
+
+    int info_size = max_buf_size - 5;
+    packet = (unsigned char *)malloc(sizeof(unsigned char) * info_size);
+    if (packet == NULL) {
+      perror("getPacket info malloc");
+      return -4;
+    }
+
+    memcpy(packet, buf + DATA_FIELD, info_size);
+    return info_size;
+  } else {
+    packet = NULL;
+    sendREJMsg(linkLayer, fd);
+    return 0;
+  }
+}
+
 /* llwrite BACKEND */
 int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
                int len) {
@@ -490,8 +572,6 @@ int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
   alarm(0);
   return 0;
 }
-
-/* llwrite BACKEND */
 
 /*llclose BACKEND */
 int sendUAMsg(struct linkLayer *linkLayer, int fd); // Defined in llopen BACKEND

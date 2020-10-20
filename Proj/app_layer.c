@@ -211,8 +211,6 @@ int llread(int fd, char *buffer) {
 }
 
 int llclose(int fd, enum applicationStatus appStatus) {
-  // TODO DISCS go here
-
   if (appStatus == RECEIVER) {
     inputLoopDISC(&linkLayer, fd);
     if (sendDISCMsg(&linkLayer, fd) < 0)
