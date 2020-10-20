@@ -30,12 +30,7 @@
 #define FLIPSEQUENCENUMBER(linkLayer)                                          \
   linkLayer->sequenceNumber = (linkLayer->sequenceNumber == 0 ? 1 : 0);
 
-#define NEXTSEQUENCENUMBER(linkLayer) (linkLayer.sequenceNumber == 0 ? 1 : 0);
-
-struct rcv_file {
-  unsigned char *file_content;
-  size_t file_size;
-};
+#define NEXTSEQUENCENUMBER(linkLayer) (linkLayer->sequenceNumber == 0 ? 1 : 0);
 
 struct linkLayer {
   char port[20];                 /* Dispositivo /dev/ttySx, x = 0, 1 */
@@ -57,6 +52,7 @@ enum SUByteField {
   FLAG2_FIELD = 4
 };
 
+/* BASICS */
 struct linkLayer initLinkLayer();
 
 void fillByteField(unsigned char *buf, enum SUByteField field,
@@ -137,10 +133,10 @@ static state state_machine[][6] = {
 
 /* llopen BACKEND */
 /* receiver */
-void inputLoopSET(struct linkLayer *linkLayer, int fd);
+int inputLoopSET(struct linkLayer *linkLayer, int fd);
 int sendUAMsg(struct linkLayer *linkLayer, int fd);
 /* transmitter */
-void inputLoopUA(struct linkLayer *linkLayer, int fd);
+int inputLoopUA(struct linkLayer *linkLayer, int fd);
 int sendSetMsg(struct linkLayer *linkLayer, int fd);
 
 /* llread BACKEND */
@@ -148,5 +144,13 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd);
 int sendREJMsg(struct linkLayer *linkLayer, int fd);
 
 /* llwrite BACKEND */
+int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
+               int len);
+
+/* llclose BACKEND */
+void inputLoopDISC(struct linkLayer *linkLayer, int fd);
+int inputLoopUA(struct linkLayer *linkLayer, int fd);
+int sendDISCMsg(struct linkLayer *linkLayer, int fd);
+int sendUAMsg(struct linkLayer *linkLayer, int fd);
 
 #endif // DATALINK_H

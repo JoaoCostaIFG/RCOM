@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -85,23 +86,58 @@ int llmetawrite(int fd, bool is_start) {
 }
 
 int llwrite(int fd, char *buffer, int length) {
-  // TODO assemble app layer data packet
-  // static N = num de serie do packet % 255
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
+  /* assemble packet */
+  static unsigned char n = 255;
+  ++n;
 
+  int new_length = length + 4;
+  unsigned char *packet =
+      (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  if (packet == NULL) {
+    perror("App layer packet instantiation");
+    return -1;
+  }
+
+  packet[0] = C_DATA;
+  packet[1] = n;
+  packet[2] = (unsigned char)(length % 256);
+  packet[3] = (unsigned char)(length - packet[2] * 256);
+  memcpy(packet + 4, buffer, sizeof(char) * length);
+
+  sendPacket(&linkLayer, fd, packet, new_length);
+
+  free(packet);
   return 0;
 }
 
 int llread(int fd, char *buffer) { return 0; }
 
-int llclose(int fd) {
+int llclose(int fd, enum applicationStatus appStatus) {
   // TODO DISCS go here
+
+  if (appStatus == RECEIVER) {
+    inputLoopDISC(&linkLayer, fd);
+    if (sendDISCMsg(&linkLayer, fd) < 0)
+      return -1;
+    inputLoopUA(&linkLayer, fd);
+
+  } else if (appStatus == TRANSMITTER) {
+    if (sendDISCMsg(&linkLayer, fd) < 0)
+      return -2;
+    inputLoopDISC(&linkLayer, fd);
+    if (sendUAMsg(&linkLayer, fd) < 0)
+      return -3;
+
+  } else {
+    return -4;
+  }
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
     perror("tcsetattr");
-    return -1;
+    return -5;
   }
 
   return close(fd);
