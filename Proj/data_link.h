@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <termios.h>
+#include <sys/types.h>
 
 // I, SET, DISC: commands (protegidas por temporizador (Allah))
 // UA, RR, REJ: answers
@@ -30,6 +31,11 @@
   linkLayer.sequenceNumber = (linkLayer.sequenceNumber == 0 ? 1 : 0);
 
 #define NEXTSEQUENCENUMBER(linkLayer) (linkLayer.sequenceNumber == 0 ? 1 : 0);
+
+struct rcv_file {
+  unsigned char *file_content;
+  size_t file_size;
+};
 
 struct linkLayer {
   char port[20];                 /* Dispositivo /dev/ttySx, x = 0, 1 */
@@ -136,5 +142,11 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd);
 /* transmitter */
 void inputLoopUA(struct linkLayer *linkLayer, int fd);
 int sendSetMsg(struct linkLayer *linkLayer, int fd);
+
+/* llread BACKEND */
+int sendRRMsg(struct linkLayer *linkLayer, int fd);
+int sendREJMsg(struct linkLayer *linkLayer, int fd);
+
+/* llwrite BACKEND */
 
 #endif // DATALINK_H

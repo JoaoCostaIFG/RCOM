@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "data_link.h"
 
@@ -331,4 +332,121 @@ int sendSetMsg(struct linkLayer *linkLayer, int fd) {
 
   return 0;
 }
+
+/* llread BACKEND */
+int sendRRMsg(struct linkLayer *linkLayer, int fd) {
+  FLIPSEQUENCENUMBER(linkLayer);
+  assembleSUPacket(linkLayer, RR_MSG);
+
+  // send msg
+  fprintf(stderr, "Sending RR %d.\n", linkLayer->sequenceNumber);
+  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  if (res < 0) {
+    perror("Failed sending RR");
+    return -1;
+  }
+  fprintf(stderr, "Sent RR %d.\n", linkLayer->sequenceNumber);
+  
+  return 0;
+}
+
+int sendREJMsg(struct linkLayer *linkLayer, int fd) {
+  assembleSUPacket(linkLayer, REJ_MSG);
+
+  // send msg
+  fprintf(stderr, "Sending REJ %d.\n", linkLayer->sequenceNumber);
+  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  if (res < 0) {
+    perror("Failed sending REJ");
+    return -1;
+  }
+  fprintf(stderr, "Sent REJ %d.\n", linkLayer->sequenceNumber);
+
+  return 0;
+}
+
+struct rcv_file getFile(struct linkLayer *linkLayer, int fd) {
+  size_t fileMaxSize = MAX_SIZE;
+  struct rcv_file rcv_file;
+  rcv_file.file_size = 0;
+  rcv_file.file_content = malloc(fileMaxSize * sizeof(unsigned char));
+
+  if (rcv_file.file_content == NULL) {
+    perror("Malloc doesn't like us, goodbye!");
+    exit(-1);
+  }
+
+  unsigned char currByte, buf[MAX_SIZE];
+  int res, bufLen;
+  bool isNextEscape;
+  transitions transition;
+  state curr_state;
+
+  while (1) { // TODO TERMINADO POR UMA TRAMA DE APP LAYER (END)
+    bufLen = 0;
+    isNextEscape = false;
+    curr_state = START_ST;
+
+    while (curr_state != STOP_ST) {
+      res = read(fd, &currByte, sizeof(unsigned char));
+      if (res <= 0) {
+        break;
+      }
+
+      transition = byteToTransitionI(currByte, buf, curr_state);
+      curr_state = state_machine[curr_state][transition];
+
+      if (curr_state == START_ST) {
+        bufLen = 0;
+      } else {
+        if (isNextEscape) {
+          --bufLen;
+          currByte = destuffByte(currByte);
+          isNextEscape = false;
+        } else if (currByte == ESC) {
+          isNextEscape = true;
+        }
+
+        buf[bufLen++] = currByte;
+      }
+    }
+
+    bool isOk = true;
+    if (!checkBCC2Field(buf + 4, bufLen - 6)) { // BCC2 is not ok
+      fprintf(stderr, "BCC2 is not OK!");
+      isOk = false;
+    }
+
+    // Check sequence number for missed/duplicate packets
+    if (linkLayer->sequenceNumber == 0) {
+      if (buf[C_FIELD] == C_CTRL1)
+        isOk = false;
+    } else if (buf[C_FIELD] == C_CTRL0)
+      isOk = false;
+
+    if (isOk) {
+      sendRRMsg(linkLayer, fd);
+      if (rcv_file.file_size + bufLen - 6 >= fileMaxSize) {
+        // increase alloced size
+        fileMaxSize *= 2;
+        rcv_file.file_content =
+            realloc(rcv_file.file_content, fileMaxSize * sizeof(unsigned char));
+        if (rcv_file.file_content == NULL) {
+          perror("Realloc also doesn't like us, goodbye!");
+          exit(-1);
+        }
+      }
+
+      memcpy(rcv_file.file_content + rcv_file.file_size, buf + 4,
+             (bufLen - 6) * sizeof(unsigned char));
+      rcv_file.file_size += bufLen - 6;
+    } else {
+      sendREJMsg(linkLayer, fd);
+    }
+  }
+
+  return rcv_file;
+}
+
+/* llwrite BACKEND */
 

@@ -75,7 +75,22 @@ int llopen(char *porta, enum applicationStatus appStatus) {
   return fd;
 }
 
+int llmetawrite(int fd, bool is_start) {
+  // TODO
+  // memcmp
+  // C = 2/3 | T1 - L1 - V1 | T2 - L2 - V2 | ...
+  // T (type): 0 tamanho file, 1 nome file, etc...
+  // L (byte): length
+  // V: valor (L length bytes)
+
+  return 0;
+}
+
 int llwrite(int fd, char *buffer, int length) {
+  // TODO assemble app layer data packet
+  // static N = num de serie do packet % 255
+  // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
+
   return 0;
 }
 
@@ -84,7 +99,7 @@ int llread(int fd, char *buffer) {
 }
 
 int llclose(int fd) {
-  // TODO discs go here
+  // TODO DISCS go here
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
@@ -95,3 +110,4 @@ int llclose(int fd) {
 
   return close(fd);
 }
+
