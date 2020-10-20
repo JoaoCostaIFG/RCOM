@@ -25,6 +25,7 @@
 #define MAXATTEMPTS 3
 #define BAUDRATE B38400
 
+// TODO usar bufs dinamicos
 #define MAX_SIZE 256 // in Bytes
 
 #define FLIPSEQUENCENUMBER(linkLayer)                                          \
@@ -49,7 +50,8 @@ enum SUByteField {
   A_FIELD = 1,
   C_FIELD = 2,
   BCC_FIELD = 3,
-  FLAG2_FIELD = 4
+  DATA_FIELD = 4,
+  FLAG2_FIELD = 4,
 };
 
 /* BASICS */
@@ -142,6 +144,11 @@ int sendSetMsg(struct linkLayer *linkLayer, int fd);
 /* llread BACKEND */
 int sendRRMsg(struct linkLayer *linkLayer, int fd);
 int sendREJMsg(struct linkLayer *linkLayer, int fd);
+/* ret: < 0, error
+ *      0, request resend of packet
+ *      > 0, size of packet
+ */
+int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet);
 
 /* llwrite BACKEND */
 int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
