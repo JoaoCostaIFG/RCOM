@@ -2,8 +2,8 @@
 #define DATALINK_H
 
 #include <stdbool.h>
-#include <termios.h>
 #include <sys/types.h>
+#include <termios.h>
 
 // I, SET, DISC: commands (protegidas por temporizador (Allah))
 // UA, RR, REJ: answers
@@ -28,7 +28,7 @@
 #define MAX_SIZE 256 // in Bytes
 
 #define FLIPSEQUENCENUMBER(linkLayer)                                          \
-  linkLayer.sequenceNumber = (linkLayer.sequenceNumber == 0 ? 1 : 0);
+  linkLayer->sequenceNumber = (linkLayer->sequenceNumber == 0 ? 1 : 0);
 
 #define NEXTSEQUENCENUMBER(linkLayer) (linkLayer.sequenceNumber == 0 ? 1 : 0);
 

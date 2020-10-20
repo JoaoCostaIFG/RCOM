@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "app_layer.h"
 #include "data_link.h"
@@ -61,14 +61,12 @@ int llopen(char *porta, enum applicationStatus appStatus) {
     if (sendUAMsg(&linkLayer, fd) < 0)
       return -5;
     /* struct rcv_file rcv_file = getFile(); */
-  }
-  else if (appStatus == TRANSMITTER) {
+  } else if (appStatus == TRANSMITTER) {
     if (sendSetMsg(&linkLayer, fd) < 0)
       return -5;
     inputLoopUA(&linkLayer, fd);
     /* sendFile(FILETOSEND); */
-  }
-  else {
+  } else {
     return -4;
   }
 
@@ -94,9 +92,7 @@ int llwrite(int fd, char *buffer, int length) {
   return 0;
 }
 
-int llread(int fd, char *buffer) {
-  return 0;
-}
+int llread(int fd, char *buffer) { return 0; }
 
 int llclose(int fd) {
   // TODO DISCS go here
@@ -110,4 +106,3 @@ int llclose(int fd) {
 
   return close(fd);
 }
-
