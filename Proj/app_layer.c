@@ -149,8 +149,8 @@ int llread(int fd, char *buffer) {
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
   ++n;
 
-  unsigned char *packet;
-  int packet_length = irao(linkLayer, fd, packet);
+  unsigned char *packet = NULL;
+  int packet_length = getPacket(&linkLayer, fd, packet);
 
   if (packet_length < 0)
     return -1; // Morreu mesmo
@@ -158,30 +158,38 @@ int llread(int fd, char *buffer) {
     return -2; // Morreu só neste
 
   if (packet[C_CONTROL] == C_DATA) {
-    if (packet[SEQ_NUMBER] != n) // Invalid sequence number
+    if (packet[SEQ_NUMBER] != n) { // Invalid sequence number
+      free(packet);
       return -2;
+    }
 
     int expected_length = packet[L2] * 256 + L1;
-    if (expected_length != packet_length)
+    if (expected_length != packet_length) {
+      free(packet);
       return -2;
+    }
 
     return 0;
   } else if (packet[C_CONTROL] == C_START || packet[C_CONTROL] == C_END) {
 
-    int curr_ind = 1;
+    int curr_ind = C_CONTROL + 1;
     int type_size = packet[curr_ind++];
-    if (type_size != T_SIZE)
+    if (type_size != T_SIZE) {
+      free(packet);
       return -4;
+    }
     int length_size = packet[curr_ind++];
     long packet_length;
-    memcpy(&packet_length, packet + curr_ind, packet_length);
-    curr_ind += packet_length;
+    memcpy(&packet_length, packet + curr_ind, length_size);
+    curr_ind += length_size;
 
     int type_name = packet[curr_ind++];
-    if (type_name != T_NAME)
+    if (type_name != T_NAME) {
+      free(packet);
       return -5;
+    }
     int length_name = packet[curr_ind++];
-    char *packet_file_name = (char *)malloc(length_name);
+    char *packet_file_name = (char *)malloc(length_name * sizeof(char));
 
     if (packet[C_CONTROL] == C_START) {
       fileName = packet_file_name;
@@ -190,13 +198,15 @@ int llread(int fd, char *buffer) {
       return 1;
     } else { // C_END
       if (strcmp(packet_file_name, fileName) != 0) {
+        free(packet);
         free(packet_file_name);
         free(fileName);
         return -6;
       }
-
       free(packet_file_name);
+
       if (packet_length != fileSize) {
+        free(packet);
         free(fileName);
         return -6;
       }
@@ -204,8 +214,10 @@ int llread(int fd, char *buffer) {
       return 2;
     }
 
-  } else
+  } else {
+    free(packet);
     return -3; // Unexpected C header
+  }
 
   return 0;
 }
