@@ -10,7 +10,7 @@
 static struct applicationLayer appLayer;
 
 void print_usage() {
-  fprintf(stderr, "Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+  fprintf(stderr, "Usage:\t <RECEIVER|TRANSMITTER> <SerialPort>\n\tex: TRANSMITTER /dev/ttyS1\n");
   exit(-1);
 }
 
