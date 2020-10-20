@@ -1,10 +1,6 @@
-NAME_SERVER = noncanonical
-SRC_SERVER = noncanonical.c msgutils.c
-OBJ_SERVER = ${SRC_SERVER:.c=.o}
-
-NAME_CLIENT = writenoncanonical
-SRC_CLIENT = writenoncanonical.c msgutils.c
-OBJ_CLIENT = ${SRC_CLIENT:.c=.o}
+NAME = rcom_tp1
+SRC = rcom_tp1.c app_layer.c data_link.c
+OBJ = ${SRC:.c=.o}
 
 # compiler and linker
 CC = gcc
@@ -21,12 +17,11 @@ options:
 .c.o:
 	${CC} -c ${CFLAGS} $<
 
-rcom: ${OBJ_SERVER} ${OBJ_CLIENT}
-	${CC} ${CFLAGS} -o ${NAME_SERVER} ${OBJ_SERVER}
-	${CC} ${CFLAGS} -o ${NAME_CLIENT} ${OBJ_CLIENT}
+rcom: ${OBJ}
+	${CC} ${CFLAGS} -o ${NAME} ${OBJ}
 
 clean:
-	rm -f ${NAME_SERVER} ${OBJ_SERVER} ${NAME_CLIENT} ${OBJ_CLIENT}
+	rm -f ${NAME} ${OBJ}
 
 .PHONY: all options clean rcom
 

@@ -1,10 +1,10 @@
-#ifndef MSGUTILS_H
-#define MSGUTILS_H
+#ifndef DATALINK_H // TOOL - Schism
+#define DATALINK_H
 
 #include <stdbool.h>
 #include <termios.h>
 
-// I, SET, DISC: commands
+// I, SET, DISC: commands (protegidas por temporizador (Allah))
 // UA, RR, REJ: answers
 
 #define FLAG 0x7e
@@ -20,10 +20,26 @@
 #define ESC 0x7d
 #define STUFF_BYTE 0x20
 
-#define MAX_SIZE 256 // in Bytes
-#define TIMEOUT 3    // seconds between answers
+#define TIMEOUT 3 // seconds between answers
 #define MAXATTEMPTS 3
 #define BAUDRATE B38400
+
+#define MAX_SIZE 256 // in Bytes
+
+#define FLIPSEQUENCENUMBER(linkLayer)                                          \
+  linkLayer.sequenceNumber = (linkLayer.sequenceNumber == 0 ? 1 : 0);
+
+#define NEXTSEQUENCENUMBER(linkLayer) (linkLayer.sequenceNumber == 0 ? 1 : 0);
+
+struct linkLayer {
+  char port[20];                 /* Dispositivo /dev/ttySx, x = 0, 1 */
+  int baudRate;                  /* Velcidade de transmissao */
+  unsigned int sequenceNumber;   /* Numero de sequencia da trama: 0, 1*/
+  unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
+  unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
+  int frameSize;                 /* Tamanho (em bytes) da trama atual */
+  unsigned char frame[MAX_SIZE]; /* Trama */
+};
 
 enum SUMessageType { SET_MSG, DISC_MSG, UA_MSG, RR_MSG, REJ_MSG };
 
@@ -35,40 +51,10 @@ enum SUByteField {
   FLAG2_FIELD = 4
 };
 
-enum applicationStatus { TRANSMITTER, RECEIVER };
-
-struct applicationLayer {
-  int fd; /* fileDescriptor correspondente a porta serie */
-  enum applicationStatus status;
-};
-
-struct linkLayer {
-  char port[20];                 /* Dispositivo /dev/ttySx, x = 0, 1 */
-  int baudRate;                  /* Velcidade de transmissao */
-  unsigned int sequenceNumber;   /* Numero de sequencia da trama: 0, 1*/
-  unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
-  unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
-
-  int frameSize;                 /* Tamanho (em bytes) da trama atual */
-  unsigned char frame[MAX_SIZE]; /* Trama */
-};
-
 struct linkLayer initLinkLayer();
-
-#define FLIPSEQUENCENUMBER(linkLayer)                                          \
-  linkLayer.sequenceNumber = (linkLayer.sequenceNumber == 0 ? 1 : 0);
-
-#define NEXTSEQUENCENUMBER(linkLayer)                                          \
-  (linkLayer.sequenceNumber == 0 ? 1 : 0);
 
 void fillByteField(unsigned char *buf, enum SUByteField field,
                    unsigned char byte);
-
-void assembleSUPacket(struct linkLayer *linkLayer,
-                      enum SUMessageType messageType);
-
-void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
-                        int size);
 
 void setBCCField(unsigned char *buf);
 
@@ -80,25 +66,26 @@ unsigned char calcBCC2Field(unsigned char *buf, int size);
 
 bool checkBCC2Field(unsigned char *buf, int size);
 
-void printfBuf(unsigned char *buf);
-
+/* STRING STUFFING */
 int stuffString(unsigned char str[], unsigned char res[], int size);
 
 unsigned char destuffByte(unsigned char byte);
 
 int stuffByte(unsigned char byte, unsigned char res[]);
 
+/* PACKET ASSEMBLY */
+void assembleSUPacket(struct linkLayer *linkLayer,
+                      enum SUMessageType messageType);
+
+void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+                        int size);
+
+/* WRITE FUNCTIONS */
 int sendAndAlarm(struct linkLayer *linkLayer, int fd);
 
-int sendAndAlarmReset(struct linkLayer* linkLayer, int fd);
+int sendAndAlarmReset(struct linkLayer *linkLayer, int fd);
 
-/* enum: transition
- * F_RCV:  0
- * A_RCV: 1
- * CI_RCV:  2
- * CS_RCV: 3
- * OTHER_RCV : 4
- */
+/* STATE MACHINE */
 typedef enum {
   FLAG_RCV = 0,
   A_RCV = 1,
@@ -126,7 +113,7 @@ transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
 transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
                               state curr_state);
 transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
-                              state curr_state);
+                               state curr_state);
 
 // clang-format off
 static state state_machine[][6] = {
@@ -142,4 +129,12 @@ static state state_machine[][6] = {
 };
 // clang-format on
 
-#endif // MSGUTILS_H
+/* llopen BACKEND */
+/* receiver */
+void inputLoopSET(struct linkLayer *linkLayer, int fd);
+int sendUAMsg(struct linkLayer *linkLayer, int fd);
+/* transmitter */
+void inputLoopUA(struct linkLayer *linkLayer, int fd);
+int sendSetMsg(struct linkLayer *linkLayer, int fd);
+
+#endif // DATALINK_H
