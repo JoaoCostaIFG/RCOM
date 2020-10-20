@@ -32,6 +32,6 @@ int main(int argc, char **argv) {
     exit(-1);
   }
 
-  llclose(appLayer.fd);
+  llclose(appLayer.fd, appLayer.status);
   return 0;
 }

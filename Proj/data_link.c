@@ -295,6 +295,31 @@ transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
   return transition;
 }
 
+transitions byteToTransitionDISC(unsigned char byte, unsigned char *buf,
+                                 state curr_state) {
+  transitions transition;
+  if (curr_state == CS_ST && byte == calcBCCField(buf)) {
+    transition = BCC_RCV;
+  } else {
+    switch (byte) {
+    case FLAG:
+      transition = FLAG_RCV;
+      break;
+    case A_SENDER:
+      transition = A_RCV;
+      break;
+    case C_DISC:
+      transition = CS_RCV;
+      break;
+    default:
+      transition = OTHER_RCV;
+      break;
+    }
+  }
+
+  return transition;
+}
+
 /* llopen BACKEND */
 /* receiver */
 int inputLoopSET(struct linkLayer *linkLayer, int fd) {
@@ -464,4 +489,49 @@ int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
 
   alarm(0);
   return 0;
+}
+
+/* llwrite BACKEND */
+
+/*llclose BACKEND */
+int sendUAMsg(struct linkLayer *linkLayer, int fd); // Defined in llopen BACKEND
+
+int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
+  assembleSUPacket(linkLayer, DISC_MSG);
+
+  fprintf(stderr, "Sending DISC.\n");
+  if (sendAndAlarmReset(linkLayer, fd) < 0) {
+    perror("Failed sending DISC");
+    return -1;
+  }
+  fprintf(stderr, "Sent DISC.\n");
+
+  return 0;
+}
+
+int inputLoopUA(struct linkLayer *linkLayer, int fd);
+
+void inputLoopDISC(struct linkLayer *linkLayer, int fd) {
+  unsigned char currByte, buf[MAX_SIZE];
+  int res = 0, bufLen = 0;
+  state curr_state = START_ST;
+  transitions transition;
+
+  fprintf(stderr, "Getting DISC.\n");
+  while (curr_state != STOP_ST) {
+    res = read(fd, &currByte, sizeof(unsigned char));
+    if (res <= 0)
+      perror("Reading DISC");
+
+    transition = byteToTransitionDISC(currByte, buf, curr_state);
+    curr_state = state_machine[curr_state][transition];
+
+    if (curr_state == START_ST)
+      bufLen = 0;
+    else
+      buf[bufLen++] = currByte;
+  }
+  alarm(0); // cancel pending alarm
+
+  fprintf(stderr, "Got DISC.\n");
 }

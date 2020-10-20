@@ -147,4 +147,10 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd);
 int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
                int len);
 
+/* llclose BACKEND */
+void inputLoopDISC(struct linkLayer *linkLayer, int fd);
+int inputLoopUA(struct linkLayer *linkLayer, int fd);
+int sendDISCMsg(struct linkLayer *linkLayer, int fd);
+int sendUAMsg(struct linkLayer *linkLayer, int fd);
+
 #endif // DATALINK_H

@@ -18,12 +18,12 @@ struct applicationLayer {
 };
 
 // int llopen(int porta, enum applicationStatus appStatus);
-int llopen(char* porta, enum applicationStatus appStatus);
+int llopen(char *porta, enum applicationStatus appStatus);
 
-int llwrite(int fd, char* buffer, int length);
+int llwrite(int fd, char *buffer, int length);
 
-int llread(int fd, char* buffer);
+int llread(int fd, char *buffer);
 
-int llclose(int fd);
+int llclose(int fd, enum applicationStatus appStatus);
 
 #endif // APPLAYER_H
