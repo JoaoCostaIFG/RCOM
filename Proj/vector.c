@@ -1,11 +1,12 @@
 #include <stdlib.h>
 
-#include "vector.h"
+#include "vector.h" // C:
 
 /* PRIVATE */
-static inline void vector_realloc(vector *vec, size_t reserve) {
+static inline void vec_realloc(vector *vec, size_t reserve) {
   vec->size = reserve;
-  vec->data = (unsigned char *)realloc(vec->data, sizeof(unsigned char) * reserve);
+  vec->data =
+      (unsigned char *)realloc(vec->data, sizeof(unsigned char) * reserve);
   if (!vec->data)
     return;
 
@@ -20,37 +21,32 @@ vector *new_vector() {
   if (!vec)
     return NULL;
 
-  vec->data = malloc(sizeof(void *) * DFLT_VEC_SIZE);
+  vec->data = malloc(sizeof(unsigned char) * DFLT_VEC_SIZE);
   if (!vec->data)
     return NULL;
 
   vec->size = DFLT_VEC_SIZE;
-  /* memset(vec->data, NULL, sizeof(void*) * vec->size); */
+  /* memset(vec->data, NULL, sizeof(unsigned char) * vec->size); */
   vec->end = 0;
   return vec;
 }
 
 /* destructor */
-void free_vector_data(vector *vec) {
-  while (vec->end)
-    vector_pop_and_free(vec);
-}
-
 void free_vector(vector *vec) {
   free(vec->data);
   free(vec);
 }
 
-bool vector_contains(vector *vec, void *elem) {
+bool vec_contains(vector *vec, unsigned char elem) {
   for (size_t i = 0; i < vec->end; ++i) {
-    if (vector_at(vec, i) == elem)
+    if (vec_at(vec, i) == elem)
       return true;
   }
   return false;
 }
 
 /* returns first elem */
-void *vector_begin(vector *vec) {
+unsigned char vec_begin(vector *vec) {
   if (vec->end == 0)
     return NULL;
 
@@ -58,7 +54,7 @@ void *vector_begin(vector *vec) {
 }
 
 /* returns last elem */
-void *vector_end(vector *vec) {
+unsigned char vec_end(vector *vec) {
   if (vec->end == 0)
     return NULL;
 
@@ -66,79 +62,71 @@ void *vector_end(vector *vec) {
 }
 
 /* max number of elements that can be used before realloc */
-size_t vector_reserved(vector *vec) { return vec->size; }
+size_t vec_reserved(vector *vec) { return vec->size; }
 
 /* reserve more elements */
-size_t vector_reserve(vector *vec, size_t reserve) {
+size_t vec_reserve(vector *vec, size_t reserve) {
   if (vec->size >= reserve)
     return vec->size;
 
-  vector_realloc(vec, reserve);
+  vec_realloc(vec, reserve);
   return reserve;
 }
 
 /* insert element at the end */
-void vector_push(vector *vec, void *elem) {
+void vec_push(vector *vec, unsigned char elem) {
   if (!vec->size) // 0 reserved space
-    vector_realloc(vec, DFLT_VEC_SIZE);
+    vec_realloc(vec, DFLT_VEC_SIZE);
 
   /* double alloced space if it is exhausted */
   if (vec->end == vec->size)
-    vector_realloc(vec, vec->size * 2);
+    vec_realloc(vec, vec->size * 2);
 
   vec->data[vec->end] = elem;
   ++vec->end;
 }
 
 /* delete element at the end */
-void vector_pop(vector *vec) {
+void vec_pop(vector *vec) {
   if (!vec->end)
     return;
 
-  vec->data[vec->end - 1] = NULL;
+  vec->data[vec->end - 1] = 0;
   --vec->end;
 }
 
-void vector_pop_and_free(vector *vec) {
-  if (!vec->end)
-    return;
-
-  free(vec->data[vec->end - 1]);
-  vector_pop_back(vec);
-}
-
 /* change element at given index */
-void vector_set(vector *vec, size_t i, void *elem) {
+void vec_set(vector *vec, size_t i, unsigned char elem) {
   if (i >= vec->end)
     return;
 
   vec->data[i] = elem;
 }
 
-void vector_clear(vector *vec) {
+void vec_clear(vector *vec) {
   for (size_t i = 0; i < vec->end; ++i)
-    vector_set(vec, i, NULL);
+    vec_set(vec, i, 0);
 }
 
 /* get element at given index */
-void *vector_at(vector *vec, size_t i) {
+unsigned char vec_at(vector *vec, size_t i) {
   if (i >= vec->end)
     return NULL;
 
   return vec->data[i];
 }
 
-void vector_insert(vector *vec, size_t i, void *elem) {
+void vec_insert(vector *vec, size_t i, unsigned char elem) {
   if (i >= vec->end)
     return;
 
   /* alloc new data array */
-  void **tempvec;
+  unsigned char *tempvec;
   if (vec->end == vec->size) {
-    tempvec = (void **)malloc(sizeof(void *) * vec->size * 2);
+    tempvec = (unsigned char *)malloc(sizeof(unsigned char) * vec->size * 2);
     vec->size *= 2;
   } else
-    tempvec = (void **)malloc(sizeof(void *) * vec->size);
+    tempvec = (unsigned char *)malloc(sizeof(unsigned char) * vec->size);
 
   /* move elements until the the index to insert */
   for (size_t j = 0; j < i; ++j) {
@@ -156,11 +144,12 @@ void vector_insert(vector *vec, size_t i, void *elem) {
 }
 
 /* delete element at given index */
-void vector_delete(vector *vec, size_t i) {
+void vec_delete(vector *vec, size_t i) {
   if (i >= vec->end)
     return;
 
-  void **tempvec = (void **)malloc(sizeof(void *) * vec->size);
+  unsigned char *tempvec =
+      (unsigned char *)malloc(sizeof(unsigned char) * vec->size);
   for (size_t j = 0; j < i; ++j) {
     tempvec[j] = vec->data[j];
   }
