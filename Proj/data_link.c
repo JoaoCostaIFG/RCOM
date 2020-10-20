@@ -1,16 +1,57 @@
+#include <errno.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "data_link.h"
 
+static volatile bool needResend = false;
+
+/* ALARM */
+void alrmHandler(int signo) {
+  if (signo != SIGALRM)
+    return;
+
+  needResend = true;
+}
+
+int resendHandler(struct linkLayer *linkLayer, int fd) {
+  if (errno != EINTR || !needResend) // the failure wasn't caused by the alarm
+    return -1;
+  needResend = false;
+
+  --linkLayer->numTransmissions;
+  if (linkLayer->numTransmissions <= 0) {
+    fprintf(stderr, "Waiting for answer timedout\n");
+    return -2;
+  }
+
+  if (sendAndAlarm(linkLayer, fd) < 0) {
+    perror("Failed re-sending last message");
+    return -3;
+  }
+
+  return 0;
+}
+
+/* BASICS */
 struct linkLayer initLinkLayer() {
   struct linkLayer linkLayer;
   linkLayer.baudRate = BAUDRATE;
   linkLayer.sequenceNumber = 0;
   linkLayer.timeout = TIMEOUT;
   linkLayer.numTransmissions = MAXATTEMPTS;
+
+  /* Set alarm signal handler */
+  struct sigaction sa;
+  sa.sa_handler = alrmHandler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  if (sigaction(SIGALRM, &sa, NULL) == -1) {
+    perror("setting alarm handler failed");
+  }
 
   return linkLayer;
 }
@@ -141,7 +182,7 @@ int sendAndAlarm(struct linkLayer *linkLayer, int fd) {
   return res;
 }
 
-int sendAndAlarmReset(struct linkLayer* linkLayer, int fd) {
+int sendAndAlarmReset(struct linkLayer *linkLayer, int fd) {
   // reset attempts
   linkLayer->numTransmissions = MAXATTEMPTS;
   return sendAndAlarm(linkLayer, fd);
@@ -256,7 +297,7 @@ transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
 
 /* llopen BACKEND */
 /* receiver */
-void inputLoopSET(struct linkLayer *linkLayer, int fd) {
+int inputLoopSET(struct linkLayer *linkLayer, int fd) {
   unsigned char currByte, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
@@ -265,8 +306,11 @@ void inputLoopSET(struct linkLayer *linkLayer, int fd) {
   fprintf(stderr, "Getting SET.\n");
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
-    if (res <= 0)
-      perror("SET read");
+    if (res < 0) { // if we get interrupted, it might be the alarm
+      if (resendHandler(linkLayer, fd) < 0) {
+        return -1;
+      }
+    }
 
     transition = byteToTransitionSET(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
@@ -276,7 +320,9 @@ void inputLoopSET(struct linkLayer *linkLayer, int fd) {
     else
       buf[bufLen++] = currByte;
   }
+
   fprintf(stderr, "Got SET.\n");
+  return 0;
 }
 
 int sendUAMsg(struct linkLayer *linkLayer, int fd) {
@@ -295,7 +341,7 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd) {
 }
 
 /* transmiter */
-void inputLoopUA(struct linkLayer *linkLayer, int fd) {
+int inputLoopUA(struct linkLayer *linkLayer, int fd) {
   unsigned char currByte, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
@@ -304,8 +350,11 @@ void inputLoopUA(struct linkLayer *linkLayer, int fd) {
   fprintf(stderr, "Getting UA.\n");
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
-    if (res <= 0)
-      perror("Reading UA");
+    if (res < 0) { // if we get interrupted, it might be the alarm
+      if (resendHandler(linkLayer, fd) < 0) {
+        return -1;
+      }
+    }
 
     transition = byteToTransitionUA(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
@@ -315,8 +364,10 @@ void inputLoopUA(struct linkLayer *linkLayer, int fd) {
     else
       buf[bufLen++] = currByte;
   }
+
   alarm(0); // cancel pending alarm
   fprintf(stderr, "Got UA.\n");
+  return 0;
 }
 
 int sendSetMsg(struct linkLayer *linkLayer, int fd) {
@@ -346,7 +397,7 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd) {
     return -1;
   }
   fprintf(stderr, "Sent RR %d.\n", linkLayer->sequenceNumber);
-  
+
   return 0;
 }
 
@@ -365,88 +416,52 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
-struct rcv_file getFile(struct linkLayer *linkLayer, int fd) {
-  size_t fileMaxSize = MAX_SIZE;
-  struct rcv_file rcv_file;
-  rcv_file.file_size = 0;
-  rcv_file.file_content = malloc(fileMaxSize * sizeof(unsigned char));
+/* llwrite BACKEND */
+int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
+               int len) {
+  // send info fragment
+  assembleInfoPacket(linkLayer, packet, len);
+  sendAndAlarmReset(linkLayer, fd);
 
-  if (rcv_file.file_content == NULL) {
-    perror("Malloc doesn't like us, goodbye!");
-    exit(-1);
-  }
+  // Get RR/REJ answer
+  int nextSeqNum = NEXTSEQUENCENUMBER(linkLayer);
+  bool okAnswer = false;
+  while (!okAnswer) {
+    fprintf(stderr, "Getting RR/REJ %d.\n", linkLayer->sequenceNumber);
 
-  unsigned char currByte, buf[MAX_SIZE];
-  int res, bufLen;
-  bool isNextEscape;
-  transitions transition;
-  state curr_state;
-
-  while (1) { // TODO TERMINADO POR UMA TRAMA DE APP LAYER (END)
-    bufLen = 0;
-    isNextEscape = false;
-    curr_state = START_ST;
+    unsigned char currByte, buf[MAX_SIZE];
+    int res, bufLen = 0;
+    state curr_state = START_ST;
+    transitions transition;
 
     while (curr_state != STOP_ST) {
       res = read(fd, &currByte, sizeof(unsigned char));
-      if (res <= 0) {
-        break;
+      if (res < 0) { // if we get interrupted, it might be the alarm
+        if (resendHandler(linkLayer, fd) < 0) {
+          return -1;
+        }
       }
 
-      transition = byteToTransitionI(currByte, buf, curr_state);
+      transition = byteToTransitionRR(currByte, buf, curr_state);
       curr_state = state_machine[curr_state][transition];
 
-      if (curr_state == START_ST) {
+      if (curr_state == START_ST)
         bufLen = 0;
-      } else {
-        if (isNextEscape) {
-          --bufLen;
-          currByte = destuffByte(currByte);
-          isNextEscape = false;
-        } else if (currByte == ESC) {
-          isNextEscape = true;
-        }
-
+      else
         buf[bufLen++] = currByte;
-      }
     }
 
-    bool isOk = true;
-    if (!checkBCC2Field(buf + 4, bufLen - 6)) { // BCC2 is not ok
-      fprintf(stderr, "BCC2 is not OK!");
-      isOk = false;
-    }
-
-    // Check sequence number for missed/duplicate packets
-    if (linkLayer->sequenceNumber == 0) {
-      if (buf[C_FIELD] == C_CTRL1)
-        isOk = false;
-    } else if (buf[C_FIELD] == C_CTRL0)
-      isOk = false;
-
-    if (isOk) {
-      sendRRMsg(linkLayer, fd);
-      if (rcv_file.file_size + bufLen - 6 >= fileMaxSize) {
-        // increase alloced size
-        fileMaxSize *= 2;
-        rcv_file.file_content =
-            realloc(rcv_file.file_content, fileMaxSize * sizeof(unsigned char));
-        if (rcv_file.file_content == NULL) {
-          perror("Realloc also doesn't like us, goodbye!");
-          exit(-1);
-        }
-      }
-
-      memcpy(rcv_file.file_content + rcv_file.file_size, buf + 4,
-             (bufLen - 6) * sizeof(unsigned char));
-      rcv_file.file_size += bufLen - 6;
-    } else {
-      sendREJMsg(linkLayer, fd);
+    if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) {
+      okAnswer = true;
+      FLIPSEQUENCENUMBER(linkLayer);
+      fprintf(stderr, "Got RR %d.\n", linkLayer->sequenceNumber);
+    } else if (buf[C_FIELD] == (C_REJ | (nextSeqNum << 7))) {
+      // reset attempts (we got an answer) and resend
+      sendAndAlarmReset(linkLayer, fd);
+      fprintf(stderr, "Got REJ %d.\n", linkLayer->sequenceNumber);
     }
   }
 
-  return rcv_file;
+  alarm(0);
+  return 0;
 }
-
-/* llwrite BACKEND */
-

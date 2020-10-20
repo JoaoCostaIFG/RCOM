@@ -1,7 +1,8 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "app_layer.h"
 #include "data_link.h"
@@ -61,14 +62,12 @@ int llopen(char *porta, enum applicationStatus appStatus) {
     if (sendUAMsg(&linkLayer, fd) < 0)
       return -5;
     /* struct rcv_file rcv_file = getFile(); */
-  }
-  else if (appStatus == TRANSMITTER) {
+  } else if (appStatus == TRANSMITTER) {
     if (sendSetMsg(&linkLayer, fd) < 0)
       return -5;
     inputLoopUA(&linkLayer, fd);
     /* sendFile(FILETOSEND); */
-  }
-  else {
+  } else {
     return -4;
   }
 
@@ -87,16 +86,32 @@ int llmetawrite(int fd, bool is_start) {
 }
 
 int llwrite(int fd, char *buffer, int length) {
-  // TODO assemble app layer data packet
-  // static N = num de serie do packet % 255
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
+  /* assemble packet */
+  static unsigned char n = 255;
+  ++n;
 
+  int new_length = length + 4;
+  unsigned char *packet =
+      (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  if (packet == NULL) {
+    perror("App layer packet instantiation");
+    return -1;
+  }
+
+  packet[0] = C_DATA;
+  packet[1] = n;
+  packet[2] = (unsigned char)(length % 256);
+  packet[3] = (unsigned char)(length - packet[2] * 256);
+  memcpy(packet + 4, buffer, sizeof(char) * length);
+
+  sendPacket(&linkLayer, fd, packet, new_length);
+
+  free(packet);
   return 0;
 }
 
-int llread(int fd, char *buffer) {
-  return 0;
-}
+int llread(int fd, char *buffer) { return 0; }
 
 int llclose(int fd) {
   // TODO DISCS go here
@@ -110,4 +125,3 @@ int llclose(int fd) {
 
   return close(fd);
 }
-
