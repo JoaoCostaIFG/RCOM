@@ -81,7 +81,7 @@ int stuffByte(unsigned char byte, unsigned char res[]);
 void assembleSUPacket(struct linkLayer *linkLayer,
                       enum SUMessageType messageType);
 
-void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+int assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
                         int size);
 
 /* WRITE FUNCTIONS */

@@ -150,14 +150,20 @@ void assembleSUPacket(struct linkLayer *linkLayer,
   linkLayer->frameSize = 5;
 }
 
-void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
-                        int size) {
+int assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+                       int size) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
   fillByteField(linkLayer->frame, C_FIELD, (linkLayer->sequenceNumber << 6));
   setBCCField(linkLayer->frame);
 
-  unsigned char stuffed_string[MAX_SIZE];
+  // in the worst case, every byte is stuffed
+  unsigned char *stuffed_string =
+      (unsigned char *)malloc(sizeof(unsigned char) * size * 2);
+  if (stuffed_string == NULL) {
+    perror("assembleInfoPacket malloc");
+    return -1;
+  }
   int new_size = stuffString(buf, stuffed_string, size);
   int i = 4;
   memcpy(linkLayer->frame + i, stuffed_string, new_size);
@@ -172,6 +178,7 @@ void assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
   linkLayer->frame[new_size + (i++)] = FLAG;
 
   linkLayer->frameSize = new_size + i;
+  return new_size + i;
 }
 
 /* WRITE FUNCTIONS */
@@ -460,6 +467,7 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
     int res = read(fd, &currByte, sizeof(unsigned char));
     if (res <= 0) {
       perror("getPacket read");
+      free(buf);
       return -2;
     }
 
@@ -482,11 +490,14 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
 
     if (bufLen >= max_buf_size) {
       bufLen *= 2;
-      buf = (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
-      if (buf == NULL) {
+      unsigned char *new_buf =
+          (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
+      if (new_buf == NULL) {
         perror("getPacket realloc");
+        free(buf);
         return -3;
       }
+      buf = new_buf;
     }
   }
 
@@ -511,14 +522,17 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
     packet = (unsigned char *)malloc(sizeof(unsigned char) * info_size);
     if (packet == NULL) {
       perror("getPacket info malloc");
+      free(buf);
       return -4;
     }
 
     memcpy(packet, buf + DATA_FIELD, info_size);
+    free(buf);
     return info_size;
   } else {
     packet = NULL;
     sendREJMsg(linkLayer, fd);
+    free(buf);
     return 0;
   }
 }
@@ -588,8 +602,6 @@ int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
 
   return 0;
 }
-
-int inputLoopUA(struct linkLayer *linkLayer, int fd);
 
 void inputLoopDISC(struct linkLayer *linkLayer, int fd) {
   unsigned char currByte, buf[MAX_SIZE];
