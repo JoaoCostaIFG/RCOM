@@ -130,7 +130,7 @@ int sendFile() {
   return appLayer.file_size;
 }
 
-int receiveFile(unsigned char *res) {
+int receiveFile(unsigned char **res) {
   unsigned char *buf = NULL;
   bool stop = false;
   do {
@@ -150,13 +150,12 @@ int receiveFile(unsigned char *res) {
 
   } while (!stop);
 
-  res = (unsigned char *)malloc(sizeof(unsigned char) *
-                                getStartPacket()->fileSize);
+  *res = (unsigned char *)malloc(sizeof(unsigned char) *
+                                 getStartPacket()->fileSize);
 
   stop = false;
   int curr_file_n = 0;
   while (!stop) {
-
     int n = llread(appLayer.fd, (char **)&buf);
     if (n < 0) {
       perror("Morreu mesmo");
@@ -175,6 +174,7 @@ int receiveFile(unsigned char *res) {
       }
     }
   }
+
   return 0;
 }
 
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
       return -1;
   } else { // RECEIVER
     unsigned char *res = NULL;
-    if (receiveFile(res) <= 0) {
+    if (receiveFile(&res) <= 0) {
       fprintf(stderr, "receiveFile() failed\n");
       exit(-2);
     }

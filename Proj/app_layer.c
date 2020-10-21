@@ -155,27 +155,30 @@ int llread(int fd, char **buffer) {
 
 int llclose(int fd, enum applicationStatus appStatus) {
   if (appStatus == RECEIVER) {
-    inputLoopDISC(&linkLayer, fd);
+    if (inputLoopDISC(&linkLayer, fd))
+      return -1;
     if (sendDISCMsg(&linkLayer, fd) < 0)
       return -1;
-    inputLoopUA(&linkLayer, fd);
+    if (inputLoopUA(&linkLayer, fd))
+      return -1;
 
   } else if (appStatus == TRANSMITTER) {
     if (sendDISCMsg(&linkLayer, fd) < 0)
       return -2;
-    inputLoopDISC(&linkLayer, fd);
+    if (inputLoopDISC(&linkLayer, fd))
+      return -2;
     if (sendUAMsg(&linkLayer, fd) < 0)
       return -3;
 
   } else {
-    return -4;
+    return -3;
   }
 
   /* Reset serial port */
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
     perror("tcsetattr");
-    return -5;
+    return -4;
   }
 
   return close(fd);

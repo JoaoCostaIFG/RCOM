@@ -608,7 +608,7 @@ int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
-void inputLoopDISC(struct linkLayer *linkLayer, int fd) {
+int inputLoopDISC(struct linkLayer *linkLayer, int fd) {
   unsigned char currByte, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
@@ -617,8 +617,11 @@ void inputLoopDISC(struct linkLayer *linkLayer, int fd) {
   fprintf(stderr, "Getting DISC.\n");
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
-    if (res <= 0)
-      perror("Reading DISC");
+    if (res < 0) { // if we get interrupted, it might be the alarm
+      if (resendHandler(linkLayer, fd) < 0) {
+        return -1;
+      }
+    }
 
     transition = byteToTransitionDISC(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
@@ -631,4 +634,5 @@ void inputLoopDISC(struct linkLayer *linkLayer, int fd) {
   alarm(0); // cancel pending alarm
 
   fprintf(stderr, "Got DISC.\n");
+  return 0;
 }
