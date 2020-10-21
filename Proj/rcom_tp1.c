@@ -82,7 +82,7 @@ void parseArgs(int argc, char **argv) {
 }
 
 int sendFile() {
-  FILE *fp = fopen(appLayer.file_name, "r");
+  FILE *fp = fopen(appLayer.file_name, "rb");
   if (fp == NULL) {
     perror(appLayer.file_name);
     return -1;
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
       exit(-2);
     }
 
-    FILE *fp = fopen("abc.gif", "w+");
+    FILE *fp = fopen("abc.gif", "wb");
     fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(), fp);
     fclose(fp);
     free(file_content);
