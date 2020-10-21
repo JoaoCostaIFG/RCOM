@@ -1,6 +1,7 @@
 #ifndef APPLAYER_H
 #define APPLAYER_H
 
+#include <stdbool.h>
 #include <termios.h>
 
 #define C_DATA 1
@@ -16,18 +17,25 @@
 #define L2 2
 #define L1 3
 
-enum applicationStatus { TRANSMITTER, RECEIVER };
+#define PORTLOCATION "/dev/ttyS"
+
+// TODO char* ??????????????????
+
+enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 
 struct applicationLayer {
   int fd; /* file descriptor correspondente a porta serie */
   enum applicationStatus status;
-  char *file_name;
+  char *file_name; // TODO is malloced in main
   long file_size;
 };
 
 // int llopen(int porta, enum applicationStatus appStatus);
-int llopen(char *porta, enum applicationStatus appStatus);
+int llopen(int porta, enum applicationStatus appStatus);
 
+int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
+                          unsigned char *packet);
+int assembleInfoPacket(char *buffer, int length, unsigned char *packet);
 int llwrite(int fd, char *buffer, int length);
 
 int llread(int fd, char *buffer);

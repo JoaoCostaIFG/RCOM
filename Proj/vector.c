@@ -48,7 +48,7 @@ bool vec_contains(vector *vec, unsigned char elem) {
 /* returns first elem */
 unsigned char vec_begin(vector *vec) {
   if (vec->end == 0)
-    return NULL;
+    return 0;
 
   return vec->data[0];
 }
@@ -56,7 +56,7 @@ unsigned char vec_begin(vector *vec) {
 /* returns last elem */
 unsigned char vec_end(vector *vec) {
   if (vec->end == 0)
-    return NULL;
+    return 0;
 
   return vec->data[vec->end - 1];
 }
@@ -106,12 +106,13 @@ void vec_set(vector *vec, size_t i, unsigned char elem) {
 void vec_clear(vector *vec) {
   for (size_t i = 0; i < vec->end; ++i)
     vec_set(vec, i, 0);
+  vec->end = 0;
 }
 
 /* get element at given index */
 unsigned char vec_at(vector *vec, size_t i) {
   if (i >= vec->end)
-    return NULL;
+    return 0;
 
   return vec->data[i];
 }

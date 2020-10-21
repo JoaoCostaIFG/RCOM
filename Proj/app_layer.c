@@ -25,10 +25,12 @@ static struct linkLayer linkLayer;
 static struct termios oldtio;
 static struct controlPacket *startPacket, *endPacket;
 
-// TODO char* porta ou int porta
-int llopen(char *porta, enum applicationStatus appStatus) {
+int llopen(int porta, enum applicationStatus appStatus) {
   linkLayer = initLinkLayer();
-  strcpy(linkLayer.port, porta);
+  char port_str[20];
+  sprintf(port_str, "%d", porta);
+  strcpy(linkLayer.port, PORTLOCATION);
+  strcat(linkLayer.port, port_str);
 
   /*
     Open serial port device for reading and writing and not as controlling tty
@@ -36,7 +38,7 @@ int llopen(char *porta, enum applicationStatus appStatus) {
   */
   int fd = open(linkLayer.port, O_RDWR | O_NOCTTY);
   if (fd < 0) {
-    perror(porta);
+    perror(linkLayer.port);
     return -1;
   }
 
@@ -76,12 +78,10 @@ int llopen(char *porta, enum applicationStatus appStatus) {
     inputLoopSET(&linkLayer, fd);
     if (sendUAMsg(&linkLayer, fd) < 0)
       return -5;
-    /* struct rcv_file rcv_file = getFile(); */
   } else if (appStatus == TRANSMITTER) {
     if (sendSetMsg(&linkLayer, fd) < 0)
       return -5;
     inputLoopUA(&linkLayer, fd);
-    /* sendFile(FILETOSEND); */
   } else {
     return -4;
   }
@@ -89,17 +89,17 @@ int llopen(char *porta, enum applicationStatus appStatus) {
   return fd;
 }
 
-int llmetawrite(int fd, bool is_end, char *file_name, long file_size) {
+int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
+                          unsigned char *packet) {
   // C = 2/3 | T1 - L1 - V1 | T2 - L2 - V2 | ...
   // T (type): 0 tamanho file, 1 nome file, etc...
   // L (byte): length
   // V: valor (L length bytes)
 
   /* assemble packet */
-  int file_name_len = strlen(file_name);
-  int new_length = 1 + 2 + file_name_len + 2 + sizeof(long);
-  unsigned char *packet =
-      (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  int file_name_len = strlen(appLayer->file_name);
+  int length = 1 + 2 + file_name_len + 2 + sizeof(long);
+  packet = (unsigned char *)malloc(length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
     return -1;
@@ -114,31 +114,25 @@ int llmetawrite(int fd, bool is_end, char *file_name, long file_size) {
   // TLV file size
   packet[curr_ind++] = T_SIZE;
   packet[curr_ind++] = sizeof(long);
-  memcpy(packet + curr_ind, &file_size, sizeof(long));
+  memcpy(packet + curr_ind, &appLayer->file_size, sizeof(long));
   curr_ind += sizeof(long) + 1;
 
   // TLV file name
   packet[curr_ind++] = T_NAME;
   packet[curr_ind++] = file_name_len;
-  memcpy(packet + curr_ind, file_name, file_name_len);
+  memcpy(packet + curr_ind, appLayer->file_name, file_name_len);
 
-  if (sendPacket(&linkLayer, fd, packet, new_length) < 0) {
-    free(packet);
-    return -2;
-  }
-  free(packet);
-  return 0;
+  return length;
 }
 
-int llwrite(int fd, char *buffer, int length) {
+int assembleInfoPacket(char *buffer, int length, unsigned char *packet) {
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
   /* assemble packet */
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
   ++n;
 
   int new_length = length + 4;
-  unsigned char *packet =
-      (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  packet = (unsigned char *)malloc(new_length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
     return -1;
@@ -150,17 +144,21 @@ int llwrite(int fd, char *buffer, int length) {
   packet[L1] = (unsigned char)(length - packet[2] * 256);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
-  if (sendPacket(&linkLayer, fd, packet, new_length) < 0) {
-    free(packet);
-    return -2;
+  return new_length;
+}
+
+int llwrite(int fd, char *buffer, int length) {
+  if (sendFrame(&linkLayer, fd, (unsigned char *)buffer, length) < 0) {
+    free(buffer);
+    return -1;
   }
-  free(packet);
+  free(buffer);
   return 0;
 }
 
 int llread(int fd, char *buffer) {
   unsigned char *packet = NULL;
-  int packet_length = getPacket(&linkLayer, fd, packet);
+  int packet_length = getFrame(&linkLayer, fd, packet);
 
   if (packet_length == 0)
     return 0; // Morreu só neste
