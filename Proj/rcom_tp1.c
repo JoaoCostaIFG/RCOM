@@ -229,16 +229,16 @@ int main(int argc, char **argv) {
     if (sendFile() < 0)
       return -1;
   } else { // RECEIVER
-    unsigned char *res = NULL;
-    if (receiveFile(&res) < 0) {
+    unsigned char *file_content = NULL;
+    if (receiveFile(&file_content) < 0) {
       fprintf(stderr, "receiveFile() failed\n");
       exit(-2);
     }
 
-    for (int i = 0; i < 8; ++i)
-      printf("%c-", res[i]);
-    printf("\n");
-    free(res);
+    FILE *fp = fopen("abc.gif", "w+");
+    fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(), fp);
+    fclose(fp);
+    free(file_content);
   }
 
   if (llclose(appLayer.fd, appLayer.status)) {
