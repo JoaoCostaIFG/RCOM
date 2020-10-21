@@ -34,4 +34,7 @@ int llread(int fd, char *buffer);
 
 int llclose(int fd, enum applicationStatus appStatus);
 
+bool isEndPacket(unsigned char *packet);
+bool isStartPacket(unsigned char *packet);
+
 #endif // APPLAYER_H

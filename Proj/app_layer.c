@@ -7,10 +7,23 @@
 #include "app_layer.h"
 #include "data_link.h"
 
+struct controlPacket {
+  unsigned char controlField;
+
+  unsigned char sizeType;
+  unsigned char sizeLength;
+  long size;
+
+  unsigned char nameType;
+  unsigned char nameLength;
+  char *fileName;
+
+  unsigned char *packet;
+};
+
 static struct linkLayer linkLayer;
 static struct termios oldtio;
-static long fileSize;
-static char *fileName;
+static struct controlPacket *startPacket, *endPacket;
 
 // TODO char* porta ou int porta
 int llopen(char *porta, enum applicationStatus appStatus) {
@@ -146,80 +159,15 @@ int llwrite(int fd, char *buffer, int length) {
 }
 
 int llread(int fd, char *buffer) {
-  static unsigned char n = 255; // unsigned integer overflow is defined >:(
-  ++n;
-
   unsigned char *packet = NULL;
   int packet_length = getPacket(&linkLayer, fd, packet);
 
-  if (packet_length < 0)
+  if (packet_length == 0)
+    return 0; // Morreu só neste
+  else if (packet_length < 0)
     return -1; // Morreu mesmo
-  else if (packet_length == 0)
-    return -2; // Morreu só neste
 
-  if (packet[C_CONTROL] == C_DATA) {
-    if (packet[SEQ_NUMBER] != n) { // Invalid sequence number
-      free(packet);
-      return -2;
-    }
-
-    int expected_length = packet[L2] * 256 + L1;
-    if (expected_length != packet_length) {
-      free(packet);
-      return -2;
-    }
-
-    return 0;
-  } else if (packet[C_CONTROL] == C_START || packet[C_CONTROL] == C_END) {
-
-    int curr_ind = C_CONTROL + 1;
-    int type_size = packet[curr_ind++];
-    if (type_size != T_SIZE) {
-      free(packet);
-      return -4;
-    }
-    int length_size = packet[curr_ind++];
-    long packet_length;
-    memcpy(&packet_length, packet + curr_ind, length_size);
-    curr_ind += length_size;
-
-    int type_name = packet[curr_ind++];
-    if (type_name != T_NAME) {
-      free(packet);
-      return -5;
-    }
-    int length_name = packet[curr_ind++];
-    char *packet_file_name = (char *)malloc(length_name * sizeof(char));
-
-    if (packet[C_CONTROL] == C_START) {
-      fileName = packet_file_name;
-      fileSize = packet_length;
-
-      return 1;
-    } else { // C_END
-      if (strcmp(packet_file_name, fileName) != 0) {
-        free(packet);
-        free(packet_file_name);
-        free(fileName);
-        return -6;
-      }
-      free(packet_file_name);
-
-      if (packet_length != fileSize) {
-        free(packet);
-        free(fileName);
-        return -6;
-      }
-
-      return 2;
-    }
-
-  } else {
-    free(packet);
-    return -3; // Unexpected C header
-  }
-
-  return 0;
+  return packet_length;
 }
 
 int llclose(int fd, enum applicationStatus appStatus) {
@@ -248,4 +196,109 @@ int llclose(int fd, enum applicationStatus appStatus) {
   }
 
   return close(fd);
+}
+
+/* llread BACKEND */
+int parseControlPacket(unsigned char *packet,
+                       struct controlPacket *control_packet) {
+
+  int curr_ind = C_CONTROL + 1;
+  int size_type = packet[curr_ind++];
+  if (size_type != T_SIZE)
+    return -1;
+
+  int size_length = packet[curr_ind++];
+  long size;
+  memcpy(&size, packet + curr_ind, size_length);
+  curr_ind += size_length;
+
+  int name_type = packet[curr_ind++];
+  if (name_type != T_NAME)
+    return -1;
+
+  int name_length = packet[curr_ind++];
+  char *packet_file_name = (char *)malloc(name_length * sizeof(char));
+
+  control_packet->nameType = name_type;
+  control_packet->nameLength = name_length;
+  control_packet->fileName = packet_file_name;
+
+  control_packet->sizeType = size_type;
+  control_packet->sizeLength = size_length;
+  control_packet->size = size;
+
+  control_packet->packet = packet;
+  return 0;
+}
+
+int parsePacket(unsigned char *packet, int packet_length) {
+  static unsigned char n = 255; // unsigned integer overflow is defined >:(
+  ++n;
+
+  if (packet[C_CONTROL] == C_DATA) { // Verifications in case of data
+    if (packet[SEQ_NUMBER] != n) {   // Invalid sequence number
+      free(packet);
+      return -2;
+    }
+
+    int expected_length = packet[L2] * 256 + packet[L1];
+    if (expected_length != packet_length) {
+      free(packet);
+      return -2;
+    }
+
+    return 0;
+  } else if (packet[C_CONTROL] == C_START || packet[C_CONTROL] == C_END) {
+    struct controlPacket *control_packet =
+        (struct controlPacket *)malloc(sizeof(struct controlPacket));
+
+    if (parseControlPacket(packet, control_packet) < 0) {
+      free(packet);
+      free(control_packet->fileName);
+      free(control_packet);
+      perror("Invalid control packet format");
+      return -3;
+    }
+
+    if (packet[C_CONTROL] == C_START) {
+      control_packet->controlField = C_START;
+      startPacket = control_packet;
+
+      return 1;
+    } else {
+      control_packet->controlField = C_END;
+      endPacket = control_packet;
+
+      if (strcmp(startPacket->fileName, endPacket->fileName) != 0) {
+        free(packet);
+        free(startPacket->fileName);
+        free(startPacket);
+        free(endPacket->fileName);
+        free(endPacket);
+        perror("start and end packet differ in fileName");
+        return -6;
+      }
+
+      if (startPacket->size != endPacket->size) {
+        free(packet);
+        free(startPacket->fileName);
+        free(startPacket);
+        free(endPacket->fileName);
+        free(endPacket);
+        perror("start and end packet differ in fileSize");
+        return -6;
+      }
+
+      return 2;
+    }
+
+  } else {
+    free(packet);
+    return -3; // Unexpected C header
+  }
+}
+
+bool isEndPacket(unsigned char *packet) { return endPacket->packet == packet; }
+bool isStartPacket(unsigned char *packet) {
+  return startPacket->packet == packet;
 }

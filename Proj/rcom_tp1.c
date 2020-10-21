@@ -10,7 +10,8 @@
 static struct applicationLayer appLayer;
 
 void print_usage() {
-  fprintf(stderr, "Usage:\t <RECEIVER|TRANSMITTER> <SerialPort>\n\tex: TRANSMITTER /dev/ttyS1\n");
+  fprintf(stderr, "Usage:\t <RECEIVER|TRANSMITTER> <SerialPort>\n\tex: "
+                  "TRANSMITTER /dev/ttyS1\n");
   exit(-1);
 }
 
@@ -30,6 +31,24 @@ int main(int argc, char **argv) {
   if (appLayer.fd < 0) {
     fprintf(stderr, "llopen() failed");
     exit(-1);
+  }
+
+  if (appLayer.status == TRANSMITTER) {
+  } else if (appLayer.status == RECEIVER) {
+    unsigned char *buf;
+    unsigned char res[];
+    bool valid_packet = false;
+    do {
+      int n = llread(appLayer.fd, (char *)buf);
+      if (n < 0) {
+        perror("Morreu mesmo");
+        valid_packet = false;
+      } else if (n == 0) {
+        valid_packet = true; // Ignore this packet
+      } else {               // n > 0
+      }
+
+    } while (!isEndPacket(buf) && valid_packet);
   }
 
   llclose(appLayer.fd, appLayer.status);
