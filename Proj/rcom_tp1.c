@@ -115,8 +115,13 @@ int sendFile() {
   while (ind < appLayer.file_size) {
     // send info fragment
     unsigned char *packet = NULL;
-    int length =
-        assembleInfoPacket((char *)file_content + ind, chunksize, &packet);
+    int length;
+    if (appLayer.file_size - ind >= chunksize)
+      length =
+          assembleInfoPacket((char *)file_content + ind, chunksize, &packet);
+    else
+      length = assembleInfoPacket((char *)file_content + ind,
+                                  appLayer.file_size - ind, &packet);
 
     if (llwrite(appLayer.fd, (char *)packet, length) < 0) {
       free(packet);
@@ -167,6 +172,7 @@ int receiveFile(unsigned char **res) {
   int curr_file_n = 0;
   while (!stop) {
     int n = llread(appLayer.fd, (char **)&buf);
+
     if (n < 0) {
       perror("Morreu mesmo");
       free(res);
@@ -179,7 +185,12 @@ int receiveFile(unsigned char **res) {
         perror("invalid packet formatting");
       else if (status == C_END)
         stop = true;
-      else
+      else if (status == C_DATA) {
+        memcpy(*res + curr_file_n, buf + 4, n - 4);
+
+        curr_file_n += n - 4;
+        stop = false;
+      } else
         stop = false;
     }
   }
@@ -224,7 +235,9 @@ int main(int argc, char **argv) {
       exit(-2);
     }
 
-    printf("%s\n", res);
+    for (int i = 0; i < 8; ++i)
+      printf("%c-", res[i]);
+    printf("\n");
     free(res);
   }
 
