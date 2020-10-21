@@ -7,20 +7,6 @@
 #include "app_layer.h"
 #include "data_link.h"
 
-struct controlPacket {
-  unsigned char controlField;
-
-  unsigned char sizeType;
-  unsigned char sizeLength;
-  long size;
-
-  unsigned char nameType;
-  unsigned char nameLength;
-  char *fileName;
-
-  unsigned char *packet;
-};
-
 static struct linkLayer linkLayer;
 static struct termios oldtio;
 static struct controlPacket *startPacket, *endPacket;
@@ -206,8 +192,8 @@ int parseControlPacket(unsigned char *packet,
     return -1;
 
   int size_length = packet[curr_ind++];
-  long size;
-  memcpy(&size, packet + curr_ind, size_length);
+  long fileSize;
+  memcpy(&fileSize, packet + curr_ind, size_length);
   curr_ind += size_length;
 
   int name_type = packet[curr_ind++];
@@ -223,7 +209,7 @@ int parseControlPacket(unsigned char *packet,
 
   control_packet->sizeType = size_type;
   control_packet->sizeLength = size_length;
-  control_packet->size = size;
+  control_packet->fileSize = fileSize;
 
   control_packet->packet = packet;
   return 0;
@@ -277,7 +263,7 @@ int parsePacket(unsigned char *packet, int packet_length) {
         return -6;
       }
 
-      if (startPacket->size != endPacket->size) {
+      if (startPacket->fileSize != endPacket->fileSize) {
         free(packet);
         free(startPacket->fileName);
         free(startPacket);
@@ -299,4 +285,12 @@ int parsePacket(unsigned char *packet, int packet_length) {
 bool isEndPacket(unsigned char *packet) { return endPacket->packet == packet; }
 bool isStartPacket(unsigned char *packet) {
   return startPacket->packet == packet;
+}
+
+struct controlPacket *getStartPacket() {
+  return startPacket;
+}
+
+struct controlPacket *getEndPacket() {
+  return endPacket;
 }

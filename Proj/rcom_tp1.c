@@ -123,6 +123,47 @@ int sendFile() {
   return appLayer.file_size;
 }
 
+int receiveFile(unsigned char *res) {
+  unsigned char *buf = NULL;
+  bool stop = false;
+  do {
+    int n = llread(appLayer.fd, (char *)buf);
+    if (n < 0) {
+      perror("Morreu mesmo");
+      return -1;
+    } else if (n == 0) { // Invalid packet, try again
+      stop = false;
+    } else if (isStartPacket(buf))
+      stop = true;
+
+  } while (stop);
+
+  res = (unsigned char *)malloc(sizeof(unsigned char) *
+                                getStartPacket()->fileSize);
+
+  stop = false;
+  int curr_file_n = 0;
+  while (!stop) {
+
+    int n = llread(appLayer.fd, (char *)buf);
+    if (n < 0) {
+      perror("Morreu mesmo");
+      free(res);
+      return -1;
+    } else if (n == 0) {
+      stop = false;
+    } else {
+      if (isEndPacket(buf)) {
+        stop = true;
+      } else {
+        memcpy(buf + curr_file_n, buf + 4, n - 4);
+        curr_file_n += n - 4;
+      }
+    }
+  }
+  return 0;
+}
+
 int main(int argc, char **argv) {
   // parse args
   appLayer.status = NONE;
@@ -152,29 +193,19 @@ int main(int argc, char **argv) {
   if (appLayer.status == TRANSMITTER) {
     sendFile();
   } else { // RECEIVER
+    unsigned char *res = NULL;
+    if (receiveFile(res) <= 0) {
+      fprintf(stderr, "receiveFile() failed\n");
+      exit(-2);
+    }
+
+    printf("%s\n", res);
+    free(res);
   }
 
   if (llclose(appLayer.fd, appLayer.status)) {
     fprintf(stderr, "llclose() failed\n");
     exit(-1);
-  }
-
-  if (appLayer.status == TRANSMITTER) {
-  } else if (appLayer.status == RECEIVER) {
-    unsigned char *buf;
-    unsigned char res[256];
-    bool valid_packet = false;
-    do {
-      int n = llread(appLayer.fd, (char *)buf);
-      if (n < 0) {
-        perror("Morreu mesmo");
-        valid_packet = false;
-      } else if (n == 0) {
-        valid_packet = true; // Ignore this packet
-      } else {               // n > 0
-      }
-
-    } while (!isEndPacket(buf) && valid_packet);
   }
 
   llclose(appLayer.fd, appLayer.status);

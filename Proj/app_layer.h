@@ -30,6 +30,20 @@ struct applicationLayer {
   long file_size;
 };
 
+struct controlPacket {
+  unsigned char controlField;
+
+  unsigned char sizeType;
+  unsigned char sizeLength;
+  long fileSize;
+
+  unsigned char nameType;
+  unsigned char nameLength;
+  char *fileName;
+
+  unsigned char *packet;
+};
+
 // int llopen(int porta, enum applicationStatus appStatus);
 int llopen(int porta, enum applicationStatus appStatus);
 
@@ -44,5 +58,7 @@ int llclose(int fd, enum applicationStatus appStatus);
 
 bool isEndPacket(unsigned char *packet);
 bool isStartPacket(unsigned char *packet);
+struct controlPacket *getStartPacket();
+struct controlPacket *getEndPacket();
 
 #endif // APPLAYER_H
