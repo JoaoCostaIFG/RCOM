@@ -105,6 +105,10 @@ int sendFile() {
   // Send start control packet
   unsigned char *start_packet = NULL;
   int start_length = assembleControlPacket(&appLayer, false, start_packet);
+  if (llwrite(appLayer.fd, (char *)start_packet, start_length) < 0) {
+    free(start_packet);
+    return -3;
+  }
 
   // Send info packets
   long ind = 0;
@@ -116,7 +120,7 @@ int sendFile() {
 
     if (llwrite(appLayer.fd, (char *)packet, length) < 0) {
       free(packet);
-      return -3;
+      return -4;
     }
 
     free(packet);
@@ -126,6 +130,10 @@ int sendFile() {
   // Send end control packet
   unsigned char *end_packet = NULL;
   int end_length = assembleControlPacket(&appLayer, true, end_packet);
+  if (llwrite(appLayer.fd, (char *)end_packet, end_length) < 0) {
+    free(end_packet);
+    return -5;
+  }
 
   return appLayer.file_size;
 }
@@ -134,7 +142,7 @@ int receiveFile(unsigned char **res) {
   unsigned char *buf = NULL;
   bool stop = false;
   do {
-    long n = llread(appLayer.fd, (char **)&buf);
+    int n = llread(appLayer.fd, (char **)&buf);
     if (n < 0) {
       perror("Morreu mesmo");
       return -1;
@@ -151,7 +159,7 @@ int receiveFile(unsigned char **res) {
   } while (!stop);
 
   *res = (unsigned char *)malloc(sizeof(unsigned char) *
-                                getStartPacket()->fileSize);
+                                 getStartPacket()->fileSize);
 
   stop = false;
   int curr_file_n = 0;

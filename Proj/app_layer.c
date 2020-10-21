@@ -90,7 +90,7 @@ int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
   }
 
   int curr_ind = 0;
-  if (!is_end)
+  if (is_end)
     packet[curr_ind++] = C_END;
   else
     packet[curr_ind++] = C_START;
