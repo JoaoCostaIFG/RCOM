@@ -528,8 +528,6 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
     }
 
     memcpy(packet, buf + DATA_FIELD, info_size);
-    for (int i = 0; i < info_size; ++i)
-      printf("%X-", packet[i]);
 
     free(buf);
     *buffer = packet;
