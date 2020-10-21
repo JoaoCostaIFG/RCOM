@@ -61,13 +61,11 @@ int llopen(int porta, enum applicationStatus appStatus) {
   // SET ->
   // UA <-
   if (appStatus == RECEIVER) {
-    inputLoopSET(&linkLayer, fd);
-    if (sendUAMsg(&linkLayer, fd) < 0)
+    if (inputLoopSET(&linkLayer, fd) < 0 || sendUAMsg(&linkLayer, fd) < 0)
       return -5;
   } else if (appStatus == TRANSMITTER) {
-    if (sendSetMsg(&linkLayer, fd) < 0)
+    if (sendSetMsg(&linkLayer, fd) < 0 || inputLoopUA(&linkLayer, fd) < 0)
       return -5;
-    inputLoopUA(&linkLayer, fd);
   } else {
     return -4;
   }
@@ -136,11 +134,8 @@ int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
 }
 
 int llwrite(int fd, char *buffer, int length) {
-  if (sendFrame(&linkLayer, fd, (unsigned char *)buffer, length) < 0) {
-    free(buffer);
+  if (sendFrame(&linkLayer, fd, (unsigned char *)buffer, length) < 0)
     return -1;
-  }
-  free(buffer);
   return 0;
 }
 

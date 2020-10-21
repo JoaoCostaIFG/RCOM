@@ -31,7 +31,7 @@ void parseArgs(int argc, char **argv) {
       {"baudrate", required_argument, 0, 'b'},
       {"chunksize", required_argument, 0, 't'},
       {0, 0, 0, 0}};
-  int c, option_index = 0, name_len;
+  int c, option_index = 0;
   while ((c = getopt_long(argc, argv, "s:p:f:b:t:", long_options,
                           &option_index)) != -1) {
 
@@ -48,7 +48,6 @@ void parseArgs(int argc, char **argv) {
       port = (int)strtol(optarg, NULL, 10);
       break;
     case 'f':
-      name_len = strlen(optarg);
       strcpy(appLayer.file_name, optarg);
       break;
     case 'b':
@@ -115,7 +114,10 @@ int sendFile() {
     int length =
         assembleInfoPacket((char *)file_content + ind, chunksize, &packet);
 
-    llwrite(appLayer.fd, (char *)packet, length);
+    if (llwrite(appLayer.fd, (char *)packet, length) < 0) {
+      free(packet);
+      return -3;
+    }
 
     free(packet);
     ind += chunksize;
@@ -204,7 +206,8 @@ int main(int argc, char **argv) {
   }
 
   if (appLayer.status == TRANSMITTER) {
-    sendFile();
+    if (sendFile() < 0)
+      return -1;
   } else { // RECEIVER
     unsigned char *res = NULL;
     if (receiveFile(res) <= 0) {
@@ -220,8 +223,6 @@ int main(int argc, char **argv) {
     fprintf(stderr, "llclose() failed\n");
     exit(-1);
   }
-
-  llclose(appLayer.fd, appLayer.status);
 
   return 0;
 }
