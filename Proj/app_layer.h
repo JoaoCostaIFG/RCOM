@@ -16,7 +16,7 @@
 #define L2 2
 #define L1 3
 
-enum applicationStatus { TRANSMITTER, RECEIVER };
+enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 
 struct applicationLayer {
   int fd; /* file descriptor correspondente a porta serie */
