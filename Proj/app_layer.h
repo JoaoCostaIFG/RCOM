@@ -48,7 +48,7 @@ struct controlPacket {
 int llopen(int porta, enum applicationStatus appStatus);
 
 int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
-                          unsigned char *packet);
+                          unsigned char **buffer);
 int assembleInfoPacket(char *buffer, int length, unsigned char **packet);
 int llwrite(int fd, char *buffer, int length);
 
@@ -56,7 +56,7 @@ int llread(int fd, char **buffer);
 
 int llclose(int fd, enum applicationStatus appStatus);
 
-int parsePacket(unsigned char *packet, long packet_length);
+int parsePacket(unsigned char *packet, int packet_length);
 bool isEndPacket(unsigned char *packet);
 bool isStartPacket(unsigned char *packet);
 struct controlPacket *getStartPacket();

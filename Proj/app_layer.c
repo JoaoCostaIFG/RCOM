@@ -74,13 +74,14 @@ int llopen(int porta, enum applicationStatus appStatus) {
 }
 
 int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
-                          unsigned char *packet) {
+                          unsigned char **buf) {
   // C = 2/3 | T1 - L1 - V1 | T2 - L2 - V2 | ...
   // T (type): 0 tamanho file, 1 nome file, etc...
   // L (byte): length
   // V: valor (L length bytes)
 
   /* assemble packet */
+  unsigned char *packet;
   int file_name_len = strlen(appLayer->file_name);
   int length = 1 + 2 + file_name_len + 2 + sizeof(long);
   packet = (unsigned char *)malloc(length * sizeof(unsigned char));
@@ -105,6 +106,7 @@ int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
   packet[curr_ind++] = T_NAME;
   packet[curr_ind++] = file_name_len;
   memcpy(packet + curr_ind, appLayer->file_name, file_name_len);
+  *buf = packet;
 
   return length;
 }
@@ -127,6 +129,7 @@ int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
   packet[SEQ_NUMBER] = n;
   packet[L2] = (unsigned char)(length % 256);
   packet[L1] = (unsigned char)(length - packet[2] * 256);
+  fprintf(stderr, "%d", length);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
   *res = packet;
@@ -211,7 +214,7 @@ int parseControlPacket(unsigned char *packet,
   return 0;
 }
 
-int parsePacket(unsigned char *packet, long packet_length) {
+int parsePacket(unsigned char *packet, int packet_length) {
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
   ++n;
 
@@ -222,9 +225,9 @@ int parsePacket(unsigned char *packet, long packet_length) {
       return -2;
     }
 
-    long expected_length = packet[L2] * 256 + packet[L1];
+    int expected_length = packet[L2] * 256 + packet[L1];
     if (expected_length != packet_length) {
-      fprintf(stderr, "Invalid length: %ld_%ld\n", expected_length,
+      fprintf(stderr, "Invalid length: %d_%d\n", expected_length,
               packet_length);
       free(packet);
       return -2;
