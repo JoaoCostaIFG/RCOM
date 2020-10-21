@@ -1,8 +1,8 @@
 #ifndef APPLAYER_H
 #define APPLAYER_H
 
-#include <termios.h>
 #include <stdbool.h>
+#include <termios.h>
 
 #define C_DATA 1
 #define C_START 2
@@ -19,6 +19,8 @@
 
 #define PORTLOCATION "/dev/ttyS"
 
+// TODO char* ??????????????????
+
 enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 
 struct applicationLayer {
@@ -31,9 +33,9 @@ struct applicationLayer {
 // int llopen(int porta, enum applicationStatus appStatus);
 int llopen(int porta, enum applicationStatus appStatus);
 
-unsigned char *assembleControlPacket(int fd, bool is_end, char *file_name,
-                                     long file_size);
-unsigned char *assembleInfoPacket(char *buffer, int length);
+int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
+                          unsigned char *packet);
+int assembleInfoPacket(char *buffer, int length, unsigned char *packet);
 int llwrite(int fd, char *buffer, int length);
 
 int llread(int fd, char *buffer);

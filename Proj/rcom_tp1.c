@@ -98,53 +98,29 @@ int sendFile() {
     return -2;
   }
 
+  // Send start control packet
+  unsigned char *start_packet = NULL;
+  int start_length = assembleControlPacket(&appLayer, false, start_packet);
+
+  // Send info packets
   long ind = 0;
   while (ind < appLayer.file_size) {
     // send info fragment
-    /* assembleInfoPacket(&linkLayer, file_content, size); */
-    /* sendAndAlarmReset(&linkLayer, appLayer.fd); */
-    /* size = read(fp, file_content, MAX_SIZE / 2); */
+    unsigned char *packet = NULL;
+    int length =
+        assembleInfoPacket((char *)file_content + ind, chunksize, packet);
 
-    /* // Get RR/REJ answer */
-    /* int nextSeqNum = NEXTSEQUENCENUMBER(linkLayer); */
-    /* bool okAnswer = false; */
-    /* while (!okAnswer) { */
-      /* fprintf(stderr, "Getting RR/REJ %d.\n", linkLayer.sequenceNumber); */
+    llwrite(appLayer.fd, (char *)packet, length);
 
-      /* unsigned char currByte, buf[MAX_SIZE]; */
-      /* int res, bufLen = 0; */
-      /* state curr_state = START_ST; */
-      /* transitions transition; */
-
-      /* while (curr_state != STOP_ST) { */
-        /* res = read(appLayer.fd, &currByte, sizeof(unsigned char)); */
-        /* if (res <= 0) */
-          /* perror("RR/REJ read"); */
-
-        /* transition = byteToTransitionRR(currByte, buf, curr_state); */
-        /* curr_state = state_machine[curr_state][transition]; */
-
-        /* if (curr_state == START_ST) */
-          /* bufLen = 0; */
-        /* else */
-          /* buf[bufLen++] = currByte; */
-      /* } */
-
-      /* if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) { */
-        /* okAnswer = true; */
-        /* FLIPSEQUENCENUMBER(linkLayer); */
-        /* fprintf(stderr, "Got RR %d.\n", linkLayer.sequenceNumber); */
-      /* } else if (buf[C_FIELD] == (C_REJ | (nextSeqNum << 7))) { */
-        /* // reset attempts (we got an answer) */
-        /* linkLayer.numTransmissions = MAXATTEMPTS; */
-        /* fprintf(stderr, "Got REJ %d.\n", linkLayer.sequenceNumber); */
-      /* } */
-    /* } */
-
-    /* alarm(0); // reset pending alarm */
+    free(packet);
+    ind += chunksize;
   }
 
-  return 0;
+  // Send end control packet
+  unsigned char *end_packet = NULL;
+  int end_length = assembleControlPacket(&appLayer, true, end_packet);
+
+  return appLayer.file_size;
 }
 
 int main(int argc, char **argv) {

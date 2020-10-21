@@ -76,21 +76,20 @@ int llopen(int porta, enum applicationStatus appStatus) {
   return fd;
 }
 
-unsigned char *assembleControlPacket(int fd, bool is_end, char *file_name,
-                                     long file_size) {
+int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
+                          unsigned char *packet) {
   // C = 2/3 | T1 - L1 - V1 | T2 - L2 - V2 | ...
   // T (type): 0 tamanho file, 1 nome file, etc...
   // L (byte): length
   // V: valor (L length bytes)
 
   /* assemble packet */
-  int file_name_len = strlen(file_name);
-  int new_length = 1 + 2 + file_name_len + 2 + sizeof(long);
-  unsigned char *packet =
-      (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  int file_name_len = strlen(appLayer->file_name);
+  int length = 1 + 2 + file_name_len + 2 + sizeof(long);
+  packet = (unsigned char *)malloc(length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
-    return NULL;
+    return -1;
   }
 
   int curr_ind = 0;
@@ -102,29 +101,28 @@ unsigned char *assembleControlPacket(int fd, bool is_end, char *file_name,
   // TLV file size
   packet[curr_ind++] = T_SIZE;
   packet[curr_ind++] = sizeof(long);
-  memcpy(packet + curr_ind, &file_size, sizeof(long));
+  memcpy(packet + curr_ind, &appLayer->file_size, sizeof(long));
   curr_ind += sizeof(long) + 1;
 
   // TLV file name
   packet[curr_ind++] = T_NAME;
   packet[curr_ind++] = file_name_len;
-  memcpy(packet + curr_ind, file_name, file_name_len);
+  memcpy(packet + curr_ind, appLayer->file_name, file_name_len);
 
-  return packet;
+  return length;
 }
 
-unsigned char *assembleInfoPacket(char *buffer, int length) {
+int assembleInfoPacket(char *buffer, int length, unsigned char *packet) {
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
   /* assemble packet */
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
   ++n;
 
   int new_length = length + 4;
-  unsigned char *packet =
-      (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  packet = (unsigned char *)malloc(new_length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
-    return NULL;
+    return -1;
   }
 
   packet[C_CONTROL] = C_DATA;
@@ -133,11 +131,11 @@ unsigned char *assembleInfoPacket(char *buffer, int length) {
   packet[L1] = (unsigned char)(length - packet[2] * 256);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
-  return packet;
+  return new_length;
 }
 
 int llwrite(int fd, char *buffer, int length) {
-  if (sendFrame(&linkLayer, fd, buffer, length) < 0) {
+  if (sendFrame(&linkLayer, fd, (unsigned char *)buffer, length) < 0) {
     free(buffer);
     return -1;
   }
