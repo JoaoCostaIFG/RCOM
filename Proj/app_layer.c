@@ -144,9 +144,8 @@ int llwrite(int fd, char *buffer, int length) {
   return 0;
 }
 
-int llread(int fd, char *buffer) {
-  unsigned char *packet = NULL;
-  int packet_length = getFrame(&linkLayer, fd, packet);
+int llread(int fd, char **buffer) {
+  int packet_length = getFrame(&linkLayer, fd, (unsigned char **)buffer);
 
   if (packet_length == 0)
     return 0; // Morreu só neste
@@ -217,18 +216,21 @@ int parseControlPacket(unsigned char *packet,
   return 0;
 }
 
-int parsePacket(unsigned char *packet, int packet_length) {
+int parsePacket(unsigned char *packet, long packet_length) {
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
   ++n;
 
   if (packet[C_CONTROL] == C_DATA) { // Verifications in case of data
     if (packet[SEQ_NUMBER] != n) {   // Invalid sequence number
+      fprintf(stderr, "Sq num: %d_%d\n", packet[SEQ_NUMBER], n);
       free(packet);
       return -2;
     }
 
-    int expected_length = packet[L2] * 256 + packet[L1];
+    long expected_length = packet[L2] * 256 + packet[L1];
     if (expected_length != packet_length) {
+      fprintf(stderr, "Invalid length: %ld_%ld\n", expected_length,
+              packet_length);
       free(packet);
       return -2;
     }
@@ -279,9 +281,11 @@ int parsePacket(unsigned char *packet, int packet_length) {
     }
 
   } else {
+    fprintf(stderr, "Seq header %d\n", packet[C_CONTROL]);
     free(packet);
     return -3; // Unexpected C header
   }
+  return 0;
 }
 
 bool isEndPacket(unsigned char *packet) { return endPacket->packet == packet; }

@@ -79,10 +79,10 @@ int stuffByte(unsigned char byte, unsigned char res[]);
 
 /* PACKET ASSEMBLY */
 void assembleSUFrame(struct linkLayer *linkLayer,
-                      enum SUMessageType messageType);
+                     enum SUMessageType messageType);
 
 int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
-                        int size);
+                      int size);
 
 /* WRITE FUNCTIONS */
 int sendAndAlarm(struct linkLayer *linkLayer, int fd);
@@ -148,11 +148,11 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd);
  *      0, request resend of packet
  *      > 0, size of packet
  */
-int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet);
+int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **packet);
 
 /* llwrite BACKEND */
 int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
-               int len);
+              int len);
 
 /* llclose BACKEND */
 void inputLoopDISC(struct linkLayer *linkLayer, int fd);

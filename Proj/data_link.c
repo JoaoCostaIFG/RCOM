@@ -448,8 +448,9 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
-int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
-  int max_buf_size = MAX_SIZE * 2;
+int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
+  unsigned char *packet = NULL;
+  int max_buf_size = MAX_SIZE;
   unsigned char *buf =
       (unsigned char *)malloc(sizeof(unsigned char) * max_buf_size);
   if (buf == NULL) {
@@ -528,6 +529,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
 
     memcpy(packet, buf + DATA_FIELD, info_size);
     free(buf);
+    *buffer = packet;
     return info_size;
   } else {
     packet = NULL;

@@ -132,7 +132,7 @@ int receiveFile(unsigned char *res) {
   unsigned char *buf = NULL;
   bool stop = false;
   do {
-    int n = llread(appLayer.fd, (char *)buf);
+    long n = llread(appLayer.fd, (char **)&buf);
     if (n < 0) {
       perror("Morreu mesmo");
       return -1;
@@ -141,14 +141,13 @@ int receiveFile(unsigned char *res) {
     } else {
       if (parsePacket(buf, n) <= 0)
         perror("invalid packet formatting");
-      else if (isStartPacket(buf))
+      else if (isStartPacket(buf)) {
         stop = true;
-      fprintf(stderr, "Got Packeto\n");
+      }
     }
 
-  } while (stop);
+  } while (!stop);
 
-  fprintf(stderr, "Got first packeto");
   res = (unsigned char *)malloc(sizeof(unsigned char) *
                                 getStartPacket()->fileSize);
 
@@ -156,7 +155,7 @@ int receiveFile(unsigned char *res) {
   int curr_file_n = 0;
   while (!stop) {
 
-    int n = llread(appLayer.fd, (char *)buf);
+    long n = llread(appLayer.fd, (char **)&buf);
     if (n < 0) {
       perror("Morreu mesmo");
       free(res);
