@@ -12,10 +12,12 @@ static struct termios oldtio;
 static long fileSize;
 static char *fileName;
 
-// TODO char* porta ou int porta
-int llopen(char *porta, enum applicationStatus appStatus) {
+int llopen(int porta, enum applicationStatus appStatus) {
   linkLayer = initLinkLayer();
-  strcpy(linkLayer.port, porta);
+  char port_str[20];
+  sprintf(port_str, "%d", porta);
+  strcpy(linkLayer.port, PORTLOCATION);
+  strcat(linkLayer.port, port_str);
 
   /*
     Open serial port device for reading and writing and not as controlling tty
@@ -23,7 +25,7 @@ int llopen(char *porta, enum applicationStatus appStatus) {
   */
   int fd = open(linkLayer.port, O_RDWR | O_NOCTTY);
   if (fd < 0) {
-    perror(porta);
+    perror(linkLayer.port);
     return -1;
   }
 
@@ -63,12 +65,10 @@ int llopen(char *porta, enum applicationStatus appStatus) {
     inputLoopSET(&linkLayer, fd);
     if (sendUAMsg(&linkLayer, fd) < 0)
       return -5;
-    /* struct rcv_file rcv_file = getFile(); */
   } else if (appStatus == TRANSMITTER) {
     if (sendSetMsg(&linkLayer, fd) < 0)
       return -5;
     inputLoopUA(&linkLayer, fd);
-    /* sendFile(FILETOSEND); */
   } else {
     return -4;
   }
@@ -76,7 +76,8 @@ int llopen(char *porta, enum applicationStatus appStatus) {
   return fd;
 }
 
-int llmetawrite(int fd, bool is_end, char *file_name, long file_size) {
+unsigned char *assembleControlPacket(int fd, bool is_end, char *file_name,
+                                     long file_size) {
   // C = 2/3 | T1 - L1 - V1 | T2 - L2 - V2 | ...
   // T (type): 0 tamanho file, 1 nome file, etc...
   // L (byte): length
@@ -89,7 +90,7 @@ int llmetawrite(int fd, bool is_end, char *file_name, long file_size) {
       (unsigned char *)malloc(new_length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
-    return -1;
+    return NULL;
   }
 
   int curr_ind = 0;
@@ -109,15 +110,10 @@ int llmetawrite(int fd, bool is_end, char *file_name, long file_size) {
   packet[curr_ind++] = file_name_len;
   memcpy(packet + curr_ind, file_name, file_name_len);
 
-  if (sendPacket(&linkLayer, fd, packet, new_length) < 0) {
-    free(packet);
-    return -2;
-  }
-  free(packet);
-  return 0;
+  return packet;
 }
 
-int llwrite(int fd, char *buffer, int length) {
+unsigned char *assembleInfoPacket(char *buffer, int length) {
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
   /* assemble packet */
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
@@ -128,7 +124,7 @@ int llwrite(int fd, char *buffer, int length) {
       (unsigned char *)malloc(new_length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
-    return -1;
+    return NULL;
   }
 
   packet[C_CONTROL] = C_DATA;
@@ -137,11 +133,15 @@ int llwrite(int fd, char *buffer, int length) {
   packet[L1] = (unsigned char)(length - packet[2] * 256);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
-  if (sendPacket(&linkLayer, fd, packet, new_length) < 0) {
-    free(packet);
-    return -2;
+  return packet;
+}
+
+int llwrite(int fd, char *buffer, int length) {
+  if (sendFrame(&linkLayer, fd, buffer, length) < 0) {
+    free(buffer);
+    return -1;
   }
-  free(packet);
+  free(buffer);
   return 0;
 }
 
@@ -150,7 +150,7 @@ int llread(int fd, char *buffer) {
   ++n;
 
   unsigned char *packet = NULL;
-  int packet_length = getPacket(&linkLayer, fd, packet);
+  int packet_length = getFrame(&linkLayer, fd, packet);
 
   if (packet_length < 0)
     return -1; // Morreu mesmo

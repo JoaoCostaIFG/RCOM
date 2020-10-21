@@ -116,7 +116,7 @@ int stuffString(unsigned char str[], unsigned char res[], int size) {
 }
 
 /* PACKET ASSEMBLY */
-void assembleSUPacket(struct linkLayer *linkLayer,
+void assembleSUFrame(struct linkLayer *linkLayer,
                       enum SUMessageType messageType) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
@@ -150,7 +150,7 @@ void assembleSUPacket(struct linkLayer *linkLayer,
   linkLayer->frameSize = 5;
 }
 
-int assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
                        int size) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
@@ -161,7 +161,7 @@ int assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
   unsigned char *stuffed_string =
       (unsigned char *)malloc(sizeof(unsigned char) * size * 2);
   if (stuffed_string == NULL) {
-    perror("assembleInfoPacket malloc");
+    perror("assembleInfoFrame malloc");
     return -1;
   }
   int new_size = stuffString(buf, stuffed_string, size);
@@ -358,7 +358,7 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
 }
 
 int sendUAMsg(struct linkLayer *linkLayer, int fd) {
-  assembleSUPacket(linkLayer, UA_MSG);
+  assembleSUFrame(linkLayer, UA_MSG);
 
   // send msg
   fprintf(stderr, "Sending UA.\n");
@@ -403,7 +403,7 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd) {
 }
 
 int sendSetMsg(struct linkLayer *linkLayer, int fd) {
-  assembleSUPacket(linkLayer, SET_MSG);
+  assembleSUFrame(linkLayer, SET_MSG);
 
   // send msg and set alarm for timeout/retry
   fprintf(stderr, "Sending SET.\n");
@@ -419,7 +419,7 @@ int sendSetMsg(struct linkLayer *linkLayer, int fd) {
 /* llread BACKEND */
 int sendRRMsg(struct linkLayer *linkLayer, int fd) {
   FLIPSEQUENCENUMBER(linkLayer);
-  assembleSUPacket(linkLayer, RR_MSG);
+  assembleSUFrame(linkLayer, RR_MSG);
 
   // send msg
   fprintf(stderr, "Sending RR %d.\n", linkLayer->sequenceNumber);
@@ -434,7 +434,7 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd) {
 }
 
 int sendREJMsg(struct linkLayer *linkLayer, int fd) {
-  assembleSUPacket(linkLayer, REJ_MSG);
+  assembleSUFrame(linkLayer, REJ_MSG);
 
   // send msg
   fprintf(stderr, "Sending REJ %d.\n", linkLayer->sequenceNumber);
@@ -448,12 +448,12 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
-int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
+int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
   int max_buf_size = MAX_SIZE;
   unsigned char *buf =
       (unsigned char *)malloc(sizeof(unsigned char) * max_buf_size);
   if (buf == NULL) {
-    perror("getPacket malloc");
+    perror("getFrame malloc");
     return -1;
   }
 
@@ -466,7 +466,7 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
   while (curr_state != STOP_ST) {
     int res = read(fd, &currByte, sizeof(unsigned char));
     if (res <= 0) {
-      perror("getPacket read");
+      perror("getFrame read");
       free(buf);
       return -2;
     }
@@ -493,7 +493,7 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
       unsigned char *new_buf =
           (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
       if (new_buf == NULL) {
-        perror("getPacket realloc");
+        perror("getFrame realloc");
         free(buf);
         return -3;
       }
@@ -521,7 +521,7 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
     int info_size = max_buf_size - 5;
     packet = (unsigned char *)malloc(sizeof(unsigned char) * info_size);
     if (packet == NULL) {
-      perror("getPacket info malloc");
+      perror("getFrame info malloc");
       free(buf);
       return -4;
     }
@@ -538,10 +538,10 @@ int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
 }
 
 /* llwrite BACKEND */
-int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
+int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
                int len) {
   // send info fragment
-  assembleInfoPacket(linkLayer, packet, len);
+  assembleInfoFrame(linkLayer, packet, len);
   sendAndAlarmReset(linkLayer, fd);
 
   // Get RR/REJ answer
@@ -591,7 +591,7 @@ int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
 int sendUAMsg(struct linkLayer *linkLayer, int fd); // Defined in llopen BACKEND
 
 int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
-  assembleSUPacket(linkLayer, DISC_MSG);
+  assembleSUFrame(linkLayer, DISC_MSG);
 
   fprintf(stderr, "Sending DISC.\n");
   if (sendAndAlarmReset(linkLayer, fd) < 0) {

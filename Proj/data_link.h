@@ -78,10 +78,10 @@ unsigned char destuffByte(unsigned char byte);
 int stuffByte(unsigned char byte, unsigned char res[]);
 
 /* PACKET ASSEMBLY */
-void assembleSUPacket(struct linkLayer *linkLayer,
+void assembleSUFrame(struct linkLayer *linkLayer,
                       enum SUMessageType messageType);
 
-int assembleInfoPacket(struct linkLayer *linkLayer, unsigned char *buf,
+int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
                         int size);
 
 /* WRITE FUNCTIONS */
@@ -148,10 +148,10 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd);
  *      0, request resend of packet
  *      > 0, size of packet
  */
-int getPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet);
+int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet);
 
 /* llwrite BACKEND */
-int sendPacket(struct linkLayer *linkLayer, int fd, unsigned char *packet,
+int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
                int len);
 
 /* llclose BACKEND */
