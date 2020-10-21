@@ -24,7 +24,7 @@ int resendHandler(struct linkLayer *linkLayer, int fd) {
 
   --linkLayer->numTransmissions;
   if (linkLayer->numTransmissions <= 0) {
-    fprintf(stderr, "Waiting for answer timedout\n");
+    fprintf(stderr, "resendHandler(): Failed waiting for answer timedout\n");
     return -2;
   }
 
