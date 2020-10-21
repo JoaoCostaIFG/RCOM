@@ -139,7 +139,7 @@ int sendFile() {
 }
 
 int receiveFile(unsigned char **res) {
-  unsigned char *buf = NULL;
+  unsigned char *buf = NULL; // TODO free buffs
   bool stop = false;
   do {
     int n = llread(appLayer.fd, (char **)&buf);
@@ -149,17 +149,19 @@ int receiveFile(unsigned char **res) {
     } else if (n == 0) { // Invalid packet, try again
       stop = false;
     } else {
-      if (parsePacket(buf, n) <= 0)
+      int status = parsePacket(buf, n);
+      if (status < 0)
         perror("invalid packet formatting");
-      else if (isStartPacket(buf)) {
+      else if (status == C_START)
         stop = true;
-      }
+      else
+        stop = false;
     }
 
   } while (!stop);
 
-  *res = (unsigned char *)malloc(sizeof(unsigned char) *
-                                 getStartPacket()->fileSize);
+  *res =
+      (unsigned char *)malloc(sizeof(unsigned char) * getStartPacketFileSize());
 
   stop = false;
   int curr_file_n = 0;
@@ -172,14 +174,13 @@ int receiveFile(unsigned char **res) {
     } else if (n == 0) {
       stop = false;
     } else {
-      if (parsePacket(buf, n) <= 0)
+      int status = parsePacket(buf, n);
+      if (status < 0)
         perror("invalid packet formatting");
-      else if (isEndPacket(buf)) {
+      else if (status == C_END)
         stop = true;
-      } else {
-        memcpy(buf + curr_file_n, buf + 4, n - 4);
-        curr_file_n += n - 4;
-      }
+      else
+        stop = false;
     }
   }
 
@@ -218,7 +219,7 @@ int main(int argc, char **argv) {
       return -1;
   } else { // RECEIVER
     unsigned char *res = NULL;
-    if (receiveFile(&res) <= 0) {
+    if (receiveFile(&res) < 0) {
       fprintf(stderr, "receiveFile() failed\n");
       exit(-2);
     }

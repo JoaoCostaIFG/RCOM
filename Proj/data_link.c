@@ -519,7 +519,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
   if (isOk) {
     sendRRMsg(linkLayer, fd);
 
-    int info_size = max_buf_size - 5;
+    int info_size = (bufLen - 1) - 5; // Buflen is ahead by one
     packet = (unsigned char *)malloc(sizeof(unsigned char) * info_size);
     if (packet == NULL) {
       perror("getFrame info malloc");
