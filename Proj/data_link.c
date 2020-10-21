@@ -488,19 +488,17 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
       buf[bufLen++] = currByte;
     }
 
-    /* TODO
-     *if (bufLen >= max_buf_size) {
-     *  bufLen *= 2;
-     *  unsigned char *new_buf =
-     *      (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
-     *  if (new_buf == NULL) {
-     *    perror("getFrame realloc");
-     *    free(buf);
-     *    return -3;
-     *  }
-     *  buf = new_buf;
-     *}
-     */
+    if (bufLen >= max_buf_size) {
+      max_buf_size *= 2;
+      unsigned char *new_buf =
+          (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
+      if (new_buf == NULL) {
+        perror("getFrame realloc");
+        free(buf);
+        return -3;
+      }
+      buf = new_buf;
+    }
   }
 
   bool isOk = true;
