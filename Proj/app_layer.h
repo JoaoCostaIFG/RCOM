@@ -26,7 +26,7 @@ enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 struct applicationLayer {
   int fd; /* file descriptor correspondente a porta serie */
   enum applicationStatus status;
-  char *file_name; // TODO is malloced in main
+  char file_name[256]; // TODO is malloced in main
   long file_size;
 };
 
@@ -56,6 +56,7 @@ int llread(int fd, char *buffer);
 
 int llclose(int fd, enum applicationStatus appStatus);
 
+int parsePacket(unsigned char *packet, int packet_length);
 bool isEndPacket(unsigned char *packet);
 bool isStartPacket(unsigned char *packet);
 struct controlPacket *getStartPacket();

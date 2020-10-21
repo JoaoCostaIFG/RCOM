@@ -144,7 +144,9 @@ int llwrite(int fd, char *buffer, int length) {
 
 int llread(int fd, char *buffer) {
   unsigned char *packet = NULL;
+  fprintf(stderr, "Getting Packeto\n");
   int packet_length = getFrame(&linkLayer, fd, packet);
+  fprintf(stderr, "Got Packeto\n");
 
   if (packet_length == 0)
     return 0; // Morreu só neste

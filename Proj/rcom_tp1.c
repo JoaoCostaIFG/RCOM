@@ -48,9 +48,7 @@ void parseArgs(int argc, char **argv) {
       break;
     case 'f':
       name_len = strlen(optarg);
-      appLayer.file_name = (char *)malloc(sizeof(char) * name_len);
-      if (appLayer.file_name != NULL)
-        strcpy(appLayer.file_name, optarg);
+      strcpy(appLayer.file_name, optarg);
       break;
     case 'b':
       baudrate = strtol(optarg, NULL, 10);
@@ -133,11 +131,16 @@ int receiveFile(unsigned char *res) {
       return -1;
     } else if (n == 0) { // Invalid packet, try again
       stop = false;
-    } else if (isStartPacket(buf))
-      stop = true;
+    } else {
+      if (parsePacket(buf, n) <= 0)
+        perror("invalid packet formatting");
+      else if (isStartPacket(buf))
+        stop = true;
+    }
 
   } while (stop);
 
+  fprintf(stderr, "Got first packeto");
   res = (unsigned char *)malloc(sizeof(unsigned char) *
                                 getStartPacket()->fileSize);
 
@@ -153,7 +156,9 @@ int receiveFile(unsigned char *res) {
     } else if (n == 0) {
       stop = false;
     } else {
-      if (isEndPacket(buf)) {
+      if (parsePacket(buf, n) <= 0)
+        perror("invalid packet formatting");
+      else if (isEndPacket(buf)) {
         stop = true;
       } else {
         memcpy(buf + curr_file_n, buf + 4, n - 4);
@@ -167,6 +172,7 @@ int receiveFile(unsigned char *res) {
 int main(int argc, char **argv) {
   // parse args
   appLayer.status = NONE;
+  strcpy(appLayer.file_name, ""); // TODO How this stay??
   parseArgs(argc, argv);
 
   if (port < 0) {
@@ -209,7 +215,6 @@ int main(int argc, char **argv) {
   }
 
   llclose(appLayer.fd, appLayer.status);
-  free(appLayer.file_name);
 
   return 0;
 }
