@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "app_layer.h"
 
@@ -88,7 +89,13 @@ int sendFile() {
     return -1;
   }
 
-  appLayer.file_size = ftell(fp);
+  struct stat sb;
+  if (stat(appLayer.file_name, &sb) == -1) {
+    perror("stat");
+    return -1;
+  }
+  appLayer.file_size = sb.st_size;
+
   unsigned char *file_content =
       (unsigned char *)malloc(sizeof(unsigned char) * appLayer.file_size);
   if (fread(file_content, sizeof(unsigned char), appLayer.file_size, fp) < 0) {
@@ -106,7 +113,7 @@ int sendFile() {
     // send info fragment
     unsigned char *packet = NULL;
     int length =
-        assembleInfoPacket((char *)file_content + ind, chunksize, packet);
+        assembleInfoPacket((char *)file_content + ind, chunksize, &packet);
 
     llwrite(appLayer.fd, (char *)packet, length);
 
@@ -136,6 +143,7 @@ int receiveFile(unsigned char *res) {
         perror("invalid packet formatting");
       else if (isStartPacket(buf))
         stop = true;
+      fprintf(stderr, "Got Packeto\n");
     }
 
   } while (stop);

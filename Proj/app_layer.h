@@ -49,7 +49,7 @@ int llopen(int porta, enum applicationStatus appStatus);
 
 int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
                           unsigned char *packet);
-int assembleInfoPacket(char *buffer, int length, unsigned char *packet);
+int assembleInfoPacket(char *buffer, int length, unsigned char **packet);
 int llwrite(int fd, char *buffer, int length);
 
 int llread(int fd, char *buffer);

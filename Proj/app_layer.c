@@ -111,14 +111,15 @@ int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
   return length;
 }
 
-int assembleInfoPacket(char *buffer, int length, unsigned char *packet) {
+int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
   /* assemble packet */
   static unsigned char n = 255; // unsigned integer overflow is defined >:(
   ++n;
 
   int new_length = length + 4;
-  packet = (unsigned char *)malloc(new_length * sizeof(unsigned char));
+  unsigned char *packet =
+      (unsigned char *)malloc(new_length * sizeof(unsigned char));
   if (packet == NULL) {
     perror("App layer packet instantiation");
     return -1;
@@ -130,6 +131,7 @@ int assembleInfoPacket(char *buffer, int length, unsigned char *packet) {
   packet[L1] = (unsigned char)(length - packet[2] * 256);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
+  *res = packet;
   return new_length;
 }
 
@@ -144,9 +146,7 @@ int llwrite(int fd, char *buffer, int length) {
 
 int llread(int fd, char *buffer) {
   unsigned char *packet = NULL;
-  fprintf(stderr, "Getting Packeto\n");
   int packet_length = getFrame(&linkLayer, fd, packet);
-  fprintf(stderr, "Got Packeto\n");
 
   if (packet_length == 0)
     return 0; // Morreu só neste

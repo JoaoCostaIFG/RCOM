@@ -117,7 +117,7 @@ int stuffString(unsigned char str[], unsigned char res[], int size) {
 
 /* PACKET ASSEMBLY */
 void assembleSUFrame(struct linkLayer *linkLayer,
-                      enum SUMessageType messageType) {
+                     enum SUMessageType messageType) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
   fillByteField(linkLayer->frame, FLAG2_FIELD, FLAG);
@@ -151,7 +151,7 @@ void assembleSUFrame(struct linkLayer *linkLayer,
 }
 
 int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
-                       int size) {
+                      int size) {
   fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
   fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
   fillByteField(linkLayer->frame, C_FIELD, (linkLayer->sequenceNumber << 6));
@@ -449,7 +449,7 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
 }
 
 int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
-  int max_buf_size = MAX_SIZE;
+  int max_buf_size = MAX_SIZE * 2;
   unsigned char *buf =
       (unsigned char *)malloc(sizeof(unsigned char) * max_buf_size);
   if (buf == NULL) {
@@ -488,17 +488,19 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
       buf[bufLen++] = currByte;
     }
 
-    if (bufLen >= max_buf_size) {
-      bufLen *= 2;
-      unsigned char *new_buf =
-          (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
-      if (new_buf == NULL) {
-        perror("getFrame realloc");
-        free(buf);
-        return -3;
-      }
-      buf = new_buf;
-    }
+    /* TODO
+     *if (bufLen >= max_buf_size) {
+     *  bufLen *= 2;
+     *  unsigned char *new_buf =
+     *      (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
+     *  if (new_buf == NULL) {
+     *    perror("getFrame realloc");
+     *    free(buf);
+     *    return -3;
+     *  }
+     *  buf = new_buf;
+     *}
+     */
   }
 
   bool isOk = true;
@@ -539,7 +541,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet) {
 
 /* llwrite BACKEND */
 int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
-               int len) {
+              int len) {
   // send info fragment
   assembleInfoFrame(linkLayer, packet, len);
   sendAndAlarmReset(linkLayer, fd);
