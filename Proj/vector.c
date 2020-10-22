@@ -3,15 +3,16 @@
 #include "vector.h" // C:
 
 /* PRIVATE */
-static inline void vec_realloc(vector *vec, size_t reserve) {
+static inline int vec_realloc(vector *vec, size_t reserve) {
   vec->size = reserve;
   vec->data =
       (unsigned char *)realloc(vec->data, sizeof(unsigned char) * reserve);
   if (!vec->data)
-    return;
+    return 1;
 
   if (vec->end > vec->size)
     vec->end = vec->size;
+  return 0;
 }
 
 /* PUBLIC */
@@ -69,21 +70,26 @@ size_t vec_reserve(vector *vec, size_t reserve) {
   if (vec->size >= reserve)
     return vec->size;
 
-  vec_realloc(vec, reserve);
+  if (vec_realloc(vec, reserve))
+    return 0;
   return reserve;
 }
 
 /* insert element at the end */
-void vec_push(vector *vec, unsigned char elem) {
+int vec_push(vector *vec, unsigned char elem) {
   if (!vec->size) // 0 reserved space
-    vec_realloc(vec, DFLT_VEC_SIZE);
+    if (vec_realloc(vec, DFLT_VEC_SIZE))
+      return 1;
 
   /* double alloced space if it is exhausted */
   if (vec->end == vec->size)
-    vec_realloc(vec, vec->size * 2);
+    if (vec_realloc(vec, vec->size * 2))
+      return 1;
 
   vec->data[vec->end] = elem;
   ++vec->end;
+
+  return 0;
 }
 
 /* delete element at the end */
