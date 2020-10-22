@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "data_link.h"
+#include "vector.h"
 
 static volatile bool needResend = false;
 
@@ -450,15 +451,13 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
 
 int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
   unsigned char *packet = NULL;
-  int max_buf_size = MAX_SIZE;
-  unsigned char *buf =
-      (unsigned char *)malloc(sizeof(unsigned char) * max_buf_size);
+
+  vector *buf = new_vector();
   if (buf == NULL) {
-    perror("getFrame malloc");
+    perror("New Vec malloc"); // New log here TODO
     return -1;
   }
 
-  int bufLen = 0;
   bool isNextEscape = false;
   state curr_state = START_ST;
   unsigned char currByte;
@@ -467,43 +466,35 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
   while (curr_state != STOP_ST) {
     int res = read(fd, &currByte, sizeof(unsigned char));
     if (res <= 0) {
-      perror("getFrame read");
-      free(buf);
+      perror("getFrame read"); // TODO Log here
+      free_vector(buf);
       return -2;
     }
 
-    transition = byteToTransitionI(currByte, buf, curr_state);
+    transition = byteToTransitionI(currByte, buf->data, curr_state);
     curr_state = state_machine[curr_state][transition];
 
     if (curr_state == START_ST) {
-      bufLen = 0;
+      buf->end = 0;
     } else {
       if (isNextEscape) {
-        --bufLen;
+        --buf->end;
         currByte = destuffByte(currByte);
         isNextEscape = false;
       } else if (currByte == ESC) {
         isNextEscape = true;
       }
 
-      buf[bufLen++] = currByte;
-    }
-
-    if (bufLen >= max_buf_size) {
-      max_buf_size *= 2;
-      unsigned char *new_buf =
-          (unsigned char *)realloc(buf, sizeof(unsigned char) * max_buf_size);
-      if (new_buf == NULL) {
-        perror("getFrame realloc");
-        free(buf);
+      fprintf(stderr, "%X-%c|", currByte, currByte);
+      if (vec_push(buf, currByte)) {
+        // Log here vec realloc failed
         return -3;
       }
-      buf = new_buf;
     }
   }
 
   bool isOk = true;
-  if (!checkBCC2Field(buf + 4, bufLen - 6)) {
+  if (!checkBCC2Field(buf->data + 4, buf->end - 6)) {
     // BCC2 is not ok
     fprintf(stderr, "BCC2 is not OK!");
     isOk = false;
@@ -511,33 +502,33 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
 
   // Check sequence number for missed/duplicate packets
   if (linkLayer->sequenceNumber == 0) {
-    if (buf[C_FIELD] == C_CTRL1)
+    if (buf->data[C_FIELD] == C_CTRL1)
       isOk = false;
-  } else if (buf[C_FIELD] == C_CTRL0)
+  } else if (buf->data[C_FIELD] == C_CTRL0)
     isOk = false;
 
   if (isOk) {
     sendRRMsg(linkLayer, fd);
 
-    int info_size = (bufLen - 1) - 5; // Buflen is ahead by one
+    int info_size = (buf->end - 1) - 5; // Buflen is ahead by one
     packet = (unsigned char *)malloc(sizeof(unsigned char) * info_size);
     if (packet == NULL) {
-      perror("getFrame info malloc");
-      free(buf);
+      free_vector(buf); // TODO Log here
       return -4;
     }
 
-    memcpy(packet, buf + DATA_FIELD, info_size);
+    memcpy(packet, buf->data + DATA_FIELD, info_size);
 
-    free(buf);
+    free_vector(buf);
     *buffer = packet;
     return info_size;
   } else {
     packet = NULL;
     sendREJMsg(linkLayer, fd);
-    free(buf);
+    free_vector(buf);
     return 0;
   }
+  fprintf(stderr, "\n");
 }
 
 /* llwrite BACKEND */

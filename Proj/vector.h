@@ -92,7 +92,7 @@ size_t vec_reserve(vector *vec, size_t reserve);
  * @param vec   Vector to insert element into.
  * @param elem  Element to insert.
  */
-void vec_push(vector *vec, unsigned char elem);
+int vec_push(vector *vec, unsigned char elem);
 
 /**
  * @brief Pop a given vector.

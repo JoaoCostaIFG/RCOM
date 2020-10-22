@@ -254,4 +254,5 @@ unsigned char *getStartPacket() { return startPacket; }
 long getStartPacketFileSize() {
   long file_size;
   memcpy(&file_size, startPacket + 3, sizeof(long));
+  return file_size;
 }
