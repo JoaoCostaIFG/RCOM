@@ -335,7 +335,6 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
   state curr_state = START_ST;
   transitions transition;
 
-  fprintf(stderr, "Getting SET.\n");
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
     if (res < 0) { // if we get interrupted, it might be the alarm
@@ -353,7 +352,6 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
       buf[bufLen++] = currByte;
   }
 
-  fprintf(stderr, "Got SET.\n");
   return 0;
 }
 
@@ -361,13 +359,11 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, UA_MSG);
 
   // send msg
-  fprintf(stderr, "Sending UA.\n");
   int res = write(fd, linkLayer->frame, linkLayer->frameSize);
   if (res < 0) {
     perror("Failed sending UA");
     return -1;
   }
-  fprintf(stderr, "Sent UA.\n");
 
   return 0;
 }
@@ -379,7 +375,6 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd) {
   state curr_state = START_ST;
   transitions transition;
 
-  fprintf(stderr, "Getting UA.\n");
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
     if (res < 0) { // if we get interrupted, it might be the alarm
@@ -398,7 +393,6 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd) {
   }
 
   alarm(0); // cancel pending alarm
-  fprintf(stderr, "Got UA.\n");
   return 0;
 }
 
@@ -406,12 +400,10 @@ int sendSetMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, SET_MSG);
 
   // send msg and set alarm for timeout/retry
-  fprintf(stderr, "Sending SET.\n");
   if (sendAndAlarmReset(linkLayer, fd) < 0) {
     perror("Failed sending SET");
     return -1;
   }
-  fprintf(stderr, "Sent SET.\n");
 
   return 0;
 }
@@ -422,13 +414,11 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, RR_MSG);
 
   // send msg
-  fprintf(stderr, "Sending RR %d.\n", linkLayer->sequenceNumber);
   int res = write(fd, linkLayer->frame, linkLayer->frameSize);
   if (res < 0) {
     perror("Failed sending RR");
     return -1;
   }
-  fprintf(stderr, "Sent RR %d.\n", linkLayer->sequenceNumber);
 
   return 0;
 }
@@ -437,13 +427,11 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, REJ_MSG);
 
   // send msg
-  fprintf(stderr, "Sending REJ %d.\n", linkLayer->sequenceNumber);
   int res = write(fd, linkLayer->frame, linkLayer->frameSize);
   if (res < 0) {
     perror("Failed sending REJ");
     return -1;
   }
-  fprintf(stderr, "Sent REJ %d.\n", linkLayer->sequenceNumber);
 
   return 0;
 }
@@ -551,8 +539,6 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
   int nextSeqNum = NEXTSEQUENCENUMBER(linkLayer);
   bool okAnswer = false;
   while (!okAnswer) {
-    fprintf(stderr, "Getting RR/REJ %d.\n", linkLayer->sequenceNumber);
-
     unsigned char currByte, buf[MAX_SIZE];
     int res, bufLen = 0;
     state curr_state = START_ST;
@@ -578,11 +564,9 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
     if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) {
       okAnswer = true;
       FLIPSEQUENCENUMBER(linkLayer);
-      fprintf(stderr, "Got RR %d.\n", linkLayer->sequenceNumber);
     } else if (buf[C_FIELD] == (C_REJ | (nextSeqNum << 7))) {
       // reset attempts (we got an answer) and resend
       sendAndAlarmReset(linkLayer, fd);
-      fprintf(stderr, "Got REJ %d.\n", linkLayer->sequenceNumber);
     }
   }
 
@@ -596,12 +580,10 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd); // Defined in llopen BACKEND
 int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, DISC_MSG);
 
-  fprintf(stderr, "Sending DISC.\n");
   if (sendAndAlarmReset(linkLayer, fd) < 0) {
     perror("Failed sending DISC");
     return -1;
   }
-  fprintf(stderr, "Sent DISC.\n");
 
   return 0;
 }
@@ -612,7 +594,6 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd) {
   state curr_state = START_ST;
   transitions transition;
 
-  fprintf(stderr, "Getting DISC.\n");
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
     if (res < 0) { // if we get interrupted, it might be the alarm
@@ -629,9 +610,8 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd) {
     else
       buf[bufLen++] = currByte;
   }
-  alarm(0); // cancel pending alarm
 
-  fprintf(stderr, "Got DISC.\n");
+  alarm(0); // cancel pending alarm
   return 0;
 }
 
@@ -643,14 +623,36 @@ int initConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
   if (isReceiver) {
     if (inputLoopSET(linkLayer, fd) < 0 || sendUAMsg(linkLayer, fd) < 0)
       failed = -1;
-  }
-  else {
+  } else {
     if (sendSetMsg(linkLayer, fd) < 0 || inputLoopUA(linkLayer, fd) < 0)
       failed = -1;
   }
 
   if (!failed) {
     printf("Successfully initialized connection...\n");
+    fflush(stdout);
+  }
+
+  return failed;
+}
+
+int endConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
+  printf("\nEnding connection...\n");
+  fflush(stdout);
+
+  int failed = 0;
+  if (isReceiver) {
+    if (inputLoopDISC(linkLayer, fd) < 0 || sendDISCMsg(linkLayer, fd) < 0 ||
+        inputLoopUA(linkLayer, fd))
+      failed = 1;
+  } else {
+    if (sendDISCMsg(linkLayer, fd) < 0 || inputLoopDISC(linkLayer, fd) < 0 ||
+        sendUAMsg(linkLayer, fd) < 0)
+      failed = -1;
+  }
+
+  if (!failed) {
+    printf("Successfully ended connection...\n");
     fflush(stdout);
   }
 

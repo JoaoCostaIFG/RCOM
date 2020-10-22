@@ -199,7 +199,6 @@ int receiveFile(unsigned char **res) {
 }
 
 void print_connection_info() {
-  return ;
   printf("==========================\n"
          "= Connection information =\n"
          "==========================\n"
@@ -209,6 +208,15 @@ void print_connection_info() {
 
   if (appLayer.status == RECEIVER) {
     printf("= Status: RECEIVER\n");
+
+    char out_file[512];
+    if (strcmp(appLayer.file_name, "")) { // not empty
+      stpcpy(out_file, appLayer.file_name);
+    } else {
+      stpcpy(out_file, "to be determined");
+    }
+
+    printf("= File: %s\n", out_file);
   } else {
     printf("= Status: TRANSMITTER\n"
            "= File: %s\n"
@@ -220,10 +228,34 @@ void print_connection_info() {
   fflush(stdout);
 }
 
+void write_file(unsigned char *file_content) {
+  char out_file[512];
+  if (strcmp(appLayer.file_name, "")) { // not empty
+    stpcpy(out_file, appLayer.file_name);
+  } else {
+    strcpy(out_file, "out/");
+    strcat(out_file, getStartPacketFileName());
+  }
+
+  FILE *fp = fopen(out_file, "w+b");
+  if (fp == NULL) {
+    perror("Failed creating output file");
+  } else {
+    if (fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(),
+               fp) < 0) {
+      perror("Failed writting");
+    } else {
+      printf("\nSuccessfully wrote file contents to: %s\nFile size: %ld\n", out_file,
+             getStartPacketFileSize());
+    }
+    fclose(fp);
+  }
+}
+
 int main(int argc, char **argv) {
   // parse args
   appLayer.status = NONE;
-  strcpy(appLayer.file_name, ""); // TODO How this stay??
+  strcpy(appLayer.file_name, "");
   parseArgs(argc, argv);
 
   if (port < 0) {
@@ -258,16 +290,7 @@ int main(int argc, char **argv) {
       exit(-2);
     }
 
-    char out_file[512];
-    strcpy(out_file, "out/");
-    strcat(out_file, getStartPacketFileName());
-    FILE *fp = fopen(out_file, "w+b");
-    if (fp == NULL) {
-      perror("Failed creating output file");
-    } else {
-      fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(), fp);
-      fclose(fp);
-    }
+    write_file(file_content);
     free(file_content);
   }
 

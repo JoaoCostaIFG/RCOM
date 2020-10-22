@@ -25,7 +25,7 @@ enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 struct applicationLayer {
   int fd; /* file descriptor correspondente a porta serie */
   enum applicationStatus status;
-  char file_name[256]; // TODO is malloced in main
+  char file_name[256];
   long file_size;
 };
 
