@@ -23,7 +23,7 @@
 
 #define TIMEOUT 3 // seconds between answers
 #define MAXATTEMPTS 3
-#define BAUDRATE B38400
+#define DFLTBAUDRATE 38400
 
 // TODO usar bufs dinamicos
 #define MAX_SIZE 256 // in Bytes
@@ -162,5 +162,6 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd);
 
 int initConnection(struct linkLayer *linkLayer, int fd, bool isReceiver);
 int endConnection(struct linkLayer *linkLayer, int fd, bool isReceiver);
+int setBaudRate(struct linkLayer *linkLayer, int baudrate);
 
 #endif // DATALINK_H

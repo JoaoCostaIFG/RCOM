@@ -11,7 +11,8 @@
 
 static struct applicationLayer appLayer;
 static int port = -1;
-static long baudrate = 38400, chunksize = 256; // TODO
+static int chunksize = 256; // TODO
+static int baudrate = 38400;
 
 void print_usage() {
   fprintf(stderr, "Usage:\t -s <RECEIVER|TRANSMITTER> -p <SerialPort> -f "

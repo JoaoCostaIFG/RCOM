@@ -11,13 +11,19 @@ static struct linkLayer linkLayer;
 static struct termios oldtio;
 static unsigned char *startPacket;
 
-int llopen(int porta, enum applicationStatus appStatus) {
+void initAppLayer(int port, int baudrate) {
   linkLayer = initLinkLayer();
+
   char port_str[20];
-  sprintf(port_str, "%d", porta);
+  sprintf(port_str, "%d", port);
   strcpy(linkLayer.port, PORTLOCATION);
   strcat(linkLayer.port, port_str);
 
+  if (setBaudRate(&linkLayer, baudrate) < 0)
+    fprintf(stderr, "Invalid baudrate. Using default: %d\n", DFLTBAUDRATE);
+}
+
+int llopen(int porta, enum applicationStatus appStatus) {
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
