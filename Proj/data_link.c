@@ -634,3 +634,25 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd) {
   fprintf(stderr, "Got DISC.\n");
   return 0;
 }
+
+int initConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
+  printf("\nAttempting to initialize a connection...\n");
+  fflush(stdout);
+
+  int failed = 0;
+  if (isReceiver) {
+    if (inputLoopSET(linkLayer, fd) < 0 || sendUAMsg(linkLayer, fd) < 0)
+      failed = -1;
+  }
+  else {
+    if (sendSetMsg(linkLayer, fd) < 0 || inputLoopUA(linkLayer, fd) < 0)
+      failed = -1;
+  }
+
+  if (!failed) {
+    printf("Successfully initialized connection...\n");
+    fflush(stdout);
+  }
+
+  return failed;
+}

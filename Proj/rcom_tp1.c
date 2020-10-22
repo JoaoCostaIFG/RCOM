@@ -199,11 +199,12 @@ int receiveFile(unsigned char **res) {
 }
 
 void print_connection_info() {
+  return ;
   printf("==========================\n"
          "= Connection information =\n"
          "==========================\n"
-         "= Baud rate:\t%ld\n"
-         "= Port:\t%d\n",
+         "= Baud rate: %ld\n"
+         "= Port: %d\n",
          baudrate, port);
 
   if (appLayer.status == RECEIVER) {
@@ -211,9 +212,8 @@ void print_connection_info() {
   } else {
     printf("= Status: TRANSMITTER\n"
            "= File: %s\n"
-           "= Port: %d\n"
            "= Chunksize: %ld\n",
-           appLayer.file_name, port, chunksize);
+           appLayer.file_name, chunksize);
   }
 
   printf("==========================\n");

@@ -25,6 +25,7 @@ clean:
 
 test: clean all
 	@make && ./rcom_tp1 -p 10 -s RECEIVER &
+	sleep 0.1
 	@./rcom_tp1 -p 11 -s TRANSMITTER -f files/gato.gif
 	diff -q files/gato.gif out/files/gato.gif
 

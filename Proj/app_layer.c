@@ -61,10 +61,10 @@ int llopen(int porta, enum applicationStatus appStatus) {
   // SET ->
   // UA <-
   if (appStatus == RECEIVER) {
-    if (inputLoopSET(&linkLayer, fd) < 0 || sendUAMsg(&linkLayer, fd) < 0)
+    if (initConnection(&linkLayer, fd, true) < 0)
       return -5;
   } else if (appStatus == TRANSMITTER) {
-    if (sendSetMsg(&linkLayer, fd) < 0 || inputLoopUA(&linkLayer, fd) < 0)
+    if (initConnection(&linkLayer, fd, false) < 0)
       return -5;
   } else {
     return -4;

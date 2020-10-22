@@ -160,4 +160,6 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd);
 int sendDISCMsg(struct linkLayer *linkLayer, int fd);
 int sendUAMsg(struct linkLayer *linkLayer, int fd);
 
+int initConnection(struct linkLayer *linkLayer, int fd, bool isReceiver);
+
 #endif // DATALINK_H
