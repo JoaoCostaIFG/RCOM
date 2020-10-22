@@ -114,7 +114,7 @@ int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
 int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
   /* assemble packet */
-  static unsigned char n = 255; // unsigned integer overflow is defined >:(
+  static unsigned char n = MAXSEQNUM; // unsigned integer overflow is defined >:(
   ++n;
 
   int new_length = length + 4;
@@ -127,8 +127,8 @@ int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
 
   packet[C_CONTROL] = C_DATA;
   packet[SEQ_NUMBER] = n;
-  packet[L2] = (unsigned char)(length / 256);
-  packet[L1] = (unsigned char)(length % 256);
+  packet[L2] = (unsigned char)(length / L2VAL);
+  packet[L1] = (unsigned char)(length % L2VAL);
   memcpy(packet + 4, buffer, sizeof(char) * length);
 
   *res = packet;
@@ -194,8 +194,6 @@ int parseControlPacket(unsigned char *packet) {
   }
 
   int size_length = packet[curr_ind++];
-  long fileSize;
-  memcpy(&fileSize, packet + curr_ind, size_length);
   curr_ind += size_length;
 
   int name_type = packet[curr_ind++];
@@ -204,17 +202,14 @@ int parseControlPacket(unsigned char *packet) {
     return -1;
   }
 
-  int name_length = packet[curr_ind++];
-  char *packet_file_name = (char *)malloc(name_length * sizeof(char));
-
-  if (packet[0] == C_START)
+  if (packet[C_CONTROL] == C_START)
     startPacket = packet;
 
   return 0;
 }
 
 int parsePacket(unsigned char *packet, int packet_length) {
-  static unsigned char n = 255; // unsigned integer overflow is defined >:(
+  static unsigned char n = MAXSEQNUM; // unsigned integer overflow is defined >:(
 
   if (packet[C_CONTROL] == C_DATA) { // Verifications in case of data
     ++n;
@@ -224,7 +219,7 @@ int parsePacket(unsigned char *packet, int packet_length) {
       return -2;
     }
 
-    int expected_length = packet[L2] * 256 + packet[L1] + 4;
+    int expected_length = packet[L2] * L2VAL + packet[L1] + 4;
     if (expected_length != packet_length) {
       fprintf(stderr, "Invalid length: %d_%d\n", expected_length,
               packet_length);
@@ -254,4 +249,9 @@ unsigned char *getStartPacket() { return startPacket; }
 long getStartPacketFileSize() {
   long file_size;
   memcpy(&file_size, startPacket + 3, sizeof(long));
+  return file_size;
+}
+
+char* getStartPacketFileName() {
+  return (char*)(startPacket + 2 + sizeof(long) + 3);
 }

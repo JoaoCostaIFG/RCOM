@@ -16,10 +16,9 @@
 #define SEQ_NUMBER 1
 #define L2 2
 #define L1 3
+#define MAXSEQNUM 255
 
 #define PORTLOCATION "/dev/ttyS"
-
-// TODO char* ??????????????????
 
 enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 
@@ -46,5 +45,6 @@ int parsePacket(unsigned char *packet, int packet_length);
 bool isEndPacket(unsigned char *packet, int n);
 unsigned char *getStartPacket();
 long getStartPacketFileSize();
+char* getStartPacketFileName();
 
 #endif // APPLAYER_H

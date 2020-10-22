@@ -198,6 +198,28 @@ int receiveFile(unsigned char **res) {
   return 0;
 }
 
+void print_connection_info() {
+  printf("==========================\n"
+         "= Connection information =\n"
+         "==========================\n"
+         "= Baud rate:\t%ld\n"
+         "= Port:\t%d\n",
+         baudrate, port);
+
+  if (appLayer.status == RECEIVER) {
+    printf("= Status: RECEIVER\n");
+  } else {
+    printf("= Status: TRANSMITTER\n"
+           "= File: %s\n"
+           "= Port: %d\n"
+           "= Chunksize: %ld\n",
+           appLayer.file_name, port, chunksize);
+  }
+
+  printf("==========================\n");
+  fflush(stdout);
+}
+
 int main(int argc, char **argv) {
   // parse args
   appLayer.status = NONE;
@@ -218,6 +240,7 @@ int main(int argc, char **argv) {
       print_usage();
     }
   }
+  print_connection_info();
 
   appLayer.fd = llopen(port, appLayer.status);
   if (appLayer.fd < 0) {
@@ -235,9 +258,16 @@ int main(int argc, char **argv) {
       exit(-2);
     }
 
-    FILE *fp = fopen("abc.gif", "wb");
-    fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(), fp);
-    fclose(fp);
+    char out_file[512];
+    strcpy(out_file, "out/");
+    strcat(out_file, getStartPacketFileName());
+    FILE *fp = fopen(out_file, "w+b");
+    if (fp == NULL) {
+      perror("Failed creating output file");
+    } else {
+      fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(), fp);
+      fclose(fp);
+    }
     free(file_content);
   }
 

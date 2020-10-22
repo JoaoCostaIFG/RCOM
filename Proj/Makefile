@@ -23,5 +23,10 @@ rcom: ${OBJ}
 clean:
 	rm -f ${NAME} ${OBJ}
 
+test: clean all
+	@make && ./rcom_tp1 -p 10 -s RECEIVER &
+	@./rcom_tp1 -p 11 -s TRANSMITTER -f files/gato.gif
+	diff -q files/gato.gif out/files/gato.gif
+
 .PHONY: all options clean rcom
 
