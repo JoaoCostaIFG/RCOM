@@ -11,7 +11,7 @@
 
 static struct applicationLayer appLayer;
 static int port = -1;
-static int chunksize = 256; // TODO
+static long chunksize = 256; // TODO
 static int baudrate = 38400;
 
 void print_usage() {
@@ -203,7 +203,7 @@ void print_connection_info() {
   printf("==========================\n"
          "= Connection information =\n"
          "==========================\n"
-         "= Baud rate: %ld\n"
+         "= Baud rate: %d\n"
          "= Port: %d\n",
          baudrate, port);
 
@@ -254,10 +254,12 @@ void write_file(unsigned char *file_content) {
 }
 
 int main(int argc, char **argv) {
-  // parse args
   appLayer.status = NONE;
   strcpy(appLayer.file_name, "");
+  // parse args
   parseArgs(argc, argv);
+  initAppLayer(&appLayer, port, baudrate);
+
 
   if (port < 0) {
     fprintf(stderr, "port is not optional.\n");

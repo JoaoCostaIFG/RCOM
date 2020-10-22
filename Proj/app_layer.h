@@ -29,7 +29,8 @@ struct applicationLayer {
   long file_size;
 };
 
-// int llopen(int porta, enum applicationStatus appStatus);
+void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate);
+
 int llopen(int porta, enum applicationStatus appStatus);
 
 int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,

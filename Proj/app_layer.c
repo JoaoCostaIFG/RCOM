@@ -11,7 +11,7 @@ static struct linkLayer linkLayer;
 static struct termios oldtio;
 static unsigned char *startPacket;
 
-void initAppLayer(int port, int baudrate) {
+void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate) {
   linkLayer = initLinkLayer();
 
   char port_str[20];
@@ -120,7 +120,8 @@ int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
 int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
   // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
   /* assemble packet */
-  static unsigned char n = MAXSEQNUM; // unsigned integer overflow is defined >:(
+  static unsigned char n =
+      MAXSEQNUM; // unsigned integer overflow is defined >:(
   ++n;
 
   int new_length = length + 4;
@@ -205,7 +206,8 @@ int parseControlPacket(unsigned char *packet) {
 }
 
 int parsePacket(unsigned char *packet, int packet_length) {
-  static unsigned char n = MAXSEQNUM; // unsigned integer overflow is defined >:(
+  static unsigned char n =
+      MAXSEQNUM; // unsigned integer overflow is defined >:(
 
   if (packet[C_CONTROL] == C_DATA) { // Verifications in case of data
     ++n;
@@ -248,6 +250,6 @@ long getStartPacketFileSize() {
   return file_size;
 }
 
-char* getStartPacketFileName() {
-  return (char*)(startPacket + 2 + sizeof(long) + 3);
+char *getStartPacketFileName() {
+  return (char *)(startPacket + 2 + sizeof(long) + 3);
 }
