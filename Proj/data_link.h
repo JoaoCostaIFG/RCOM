@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#define TIMEOUT 3 // seconds between answers
+#define TIMEOUT 1 // seconds between answers
 #define MAXATTEMPTS 3
 #define DFLTBAUDRATE 38400
 

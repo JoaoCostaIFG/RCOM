@@ -28,7 +28,7 @@
 
 #define NEXTSEQUENCENUMBER(linkLayer) (linkLayer->sequenceNumber == 0 ? 1 : 0);
 
-enum SUMessageType { SET_MSG, DISC_MSG, UA_MSG, RR_MSG, REJ_MSG };
+enum SUMessageType { SET_MSG, DISCSEND_MSG, DISCRECV_MSG, UA_MSG, RR_MSG, REJ_MSG };
 
 enum SUByteField {
   FLAG1_FIELD = 0,
@@ -101,6 +101,8 @@ transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
                               state curr_state);
 transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
                                state curr_state);
+transitions byteToTransitionDISC(unsigned char byte, unsigned char *buf,
+                                 state curr_state, bool isRecv);
 
 // clang-format off
 static state state_machine[][6] = {
@@ -129,9 +131,9 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd);
 int sendREJMsg(struct linkLayer *linkLayer, int fd);
 
 /* llclose BACKEND */
-int inputLoopDISC(struct linkLayer *linkLayer, int fd);
+int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv);
 int inputLoopUA(struct linkLayer *linkLayer, int fd);
-int sendDISCMsg(struct linkLayer *linkLayer, int fd);
+int sendDISCMsg(struct linkLayer *linkLayer, int fd, bool isRecv);
 int sendUAMsg(struct linkLayer *linkLayer, int fd);
 
 #endif // DATALINK_PRIV_H

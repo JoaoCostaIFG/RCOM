@@ -128,8 +128,12 @@ void assembleSUFrame(struct linkLayer *linkLayer,
   case SET_MSG:
     fillByteField(linkLayer->frame, C_FIELD, C_SET);
     break;
-  case DISC_MSG:
+  case DISCSEND_MSG:
     fillByteField(linkLayer->frame, C_FIELD, C_DISC);
+    break;
+  case DISCRECV_MSG:
+    fillByteField(linkLayer->frame, C_FIELD, C_DISC);
+    fillByteField(linkLayer->frame, A_FIELD, A_RCV);
     break;
   case UA_MSG:
     fillByteField(linkLayer->frame, C_FIELD, C_UA);
@@ -304,7 +308,7 @@ transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
 }
 
 transitions byteToTransitionDISC(unsigned char byte, unsigned char *buf,
-                                 state curr_state) {
+                                 state curr_state, bool isRecv) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -313,8 +317,17 @@ transitions byteToTransitionDISC(unsigned char byte, unsigned char *buf,
     case FLAG:
       transition = FLAG_RCV;
       break;
+    case A_RECEIVER:
+      if (!isRecv) // if we are receiver, we want the sender byte
+        transition = A_RCV;
+      else
+        transition = OTHER_RCV;
+      break;
     case A_SENDER:
-      transition = A_RCV;
+      if (isRecv)
+        transition = A_RCV;
+      else
+        transition = OTHER_RCV;
       break;
     case C_DISC:
       transition = CS_RCV;
@@ -567,8 +580,8 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
 /*llclose BACKEND */
 int sendUAMsg(struct linkLayer *linkLayer, int fd); // Defined in llopen BACKEND
 
-int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
-  assembleSUFrame(linkLayer, DISC_MSG);
+int sendDISCMsg(struct linkLayer *linkLayer, int fd, bool isRecv) {
+  assembleSUFrame(linkLayer, isRecv ? DISCRECV_MSG : DISCSEND_MSG);
 
   if (sendAndAlarmReset(linkLayer, fd) < 0) {
     perror("Failed sending DISC");
@@ -578,7 +591,7 @@ int sendDISCMsg(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
-int inputLoopDISC(struct linkLayer *linkLayer, int fd) {
+int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv) {
   unsigned char currByte, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
@@ -592,7 +605,7 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd) {
       }
     }
 
-    transition = byteToTransitionDISC(currByte, buf, curr_state);
+    transition = byteToTransitionDISC(currByte, buf, curr_state, isRecv);
     curr_state = state_machine[curr_state][transition];
 
     if (curr_state == START_ST)

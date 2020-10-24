@@ -29,11 +29,11 @@ int endConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
 
   int failed = 0;
   if (isReceiver) {
-    if (inputLoopDISC(linkLayer, fd) < 0 || sendDISCMsg(linkLayer, fd) < 0 ||
+    if (inputLoopDISC(linkLayer, fd, true) < 0 || sendDISCMsg(linkLayer, fd, true) < 0 ||
         inputLoopUA(linkLayer, fd))
       failed = 1;
   } else {
-    if (sendDISCMsg(linkLayer, fd) < 0 || inputLoopDISC(linkLayer, fd) < 0 ||
+    if (sendDISCMsg(linkLayer, fd, false) < 0 || inputLoopDISC(linkLayer, fd, false) < 0 ||
         sendUAMsg(linkLayer, fd) < 0)
       failed = -1;
   }
