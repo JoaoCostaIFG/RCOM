@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 #include "data_link_priv.h"
-#include "vector.h"
 
 static volatile bool needResend = false;
 
@@ -44,6 +43,8 @@ struct linkLayer initLinkLayer() {
   linkLayer.sequenceNumber = 0;
   linkLayer.timeout = TIMEOUT;
   linkLayer.numTransmissions = MAXATTEMPTS;
+  linkLayer.frame = new_vector();
+  vec_reserve(linkLayer.frame, MAX_SIZE);
 
   /* Set alarm signal handler */
   struct sigaction sa;
@@ -104,7 +105,7 @@ int stuffByte(unsigned char byte, unsigned char res[]) {
 
 unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
 
-int stuffString(unsigned char str[], unsigned char res[], int size) {
+int stuffString(unsigned char *str, unsigned char *res, int size) {
   int j = 0;
   for (int i = 0; i < size; ++i) {
     unsigned char stuffedBytes[2];
@@ -119,48 +120,53 @@ int stuffString(unsigned char str[], unsigned char res[], int size) {
 /* PACKET ASSEMBLY */
 void assembleSUFrame(struct linkLayer *linkLayer,
                      enum SUMessageType messageType) {
-  fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
-  fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
-  fillByteField(linkLayer->frame, FLAG2_FIELD, FLAG);
+  fillByteField(linkLayer->frame->data, FLAG1_FIELD, FLAG);
+  fillByteField(linkLayer->frame->data, A_FIELD, A_SENDER);
+  fillByteField(linkLayer->frame->data, FLAG2_FIELD, FLAG);
 
   // set C_FIELD
   switch (messageType) {
   case SET_MSG:
-    fillByteField(linkLayer->frame, C_FIELD, C_SET);
+    fillByteField(linkLayer->frame->data, C_FIELD, C_SET);
     break;
   case DISCSEND_MSG:
-    fillByteField(linkLayer->frame, C_FIELD, C_DISC);
+    fillByteField(linkLayer->frame->data, C_FIELD, C_DISC);
     break;
   case DISCRECV_MSG:
-    fillByteField(linkLayer->frame, C_FIELD, C_DISC);
-    fillByteField(linkLayer->frame, A_FIELD, A_RCV);
+    fillByteField(linkLayer->frame->data, C_FIELD, C_DISC);
+    fillByteField(linkLayer->frame->data, A_FIELD, A_RCV);
     break;
-  case UA_MSG:
-    fillByteField(linkLayer->frame, C_FIELD, C_UA);
+  case UASEND_MSG:
+    fillByteField(linkLayer->frame->data, C_FIELD, C_UA);
+    break;
+  case UARECV_MSG:
+    fillByteField(linkLayer->frame->data, C_FIELD, C_UA);
+    fillByteField(linkLayer->frame->data, A_FIELD, A_RCV);
     break;
   case RR_MSG:
-    fillByteField(linkLayer->frame, C_FIELD,
+    fillByteField(linkLayer->frame->data, C_FIELD,
                   C_RR | (linkLayer->sequenceNumber << 7));
     break;
   case REJ_MSG:
-    fillByteField(linkLayer->frame, C_FIELD,
+    fillByteField(linkLayer->frame->data, C_FIELD,
                   C_REJ | (linkLayer->sequenceNumber << 7));
     break;
   default: // ?
-    fillByteField(linkLayer->frame, C_FIELD, 0);
+    fillByteField(linkLayer->frame->data, C_FIELD, 0);
     break;
   }
 
-  setBCCField(linkLayer->frame);
-  linkLayer->frameSize = 5;
+  setBCCField(linkLayer->frame->data);
+  linkLayer->frame->end = 5;
 }
 
 int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
                       int size) {
-  fillByteField(linkLayer->frame, FLAG1_FIELD, FLAG);
-  fillByteField(linkLayer->frame, A_FIELD, A_SENDER);
-  fillByteField(linkLayer->frame, C_FIELD, (linkLayer->sequenceNumber << 6));
-  setBCCField(linkLayer->frame);
+  fillByteField(linkLayer->frame->data, FLAG1_FIELD, FLAG);
+  fillByteField(linkLayer->frame->data, A_FIELD, A_SENDER);
+  fillByteField(linkLayer->frame->data, C_FIELD,
+                (linkLayer->sequenceNumber << 6));
+  setBCCField(linkLayer->frame->data);
 
   // in the worst case, every byte is stuffed
   unsigned char *stuffed_string =
@@ -171,24 +177,28 @@ int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
   }
   int new_size = stuffString(buf, stuffed_string, size);
   int i = HEADER_LEN;
-  memcpy(linkLayer->frame + i, stuffed_string, new_size);
 
-  unsigned char bcc_res[2], bcc = calcBCC2Field(buf, size);
-  int bcc_size = stuffByte(bcc, bcc_res);
-  linkLayer->frame[new_size + (i++)] = bcc_res[0];
+  vec_reserve(linkLayer->frame,
+              HEADER_LEN + new_size + 3); // BCC2 (x2) + end flag
+  memcpy(linkLayer->frame->data + i, stuffed_string, new_size);
+  free(stuffed_string);
 
-  if (bcc_size == 2)
-    linkLayer->frame[new_size + (i++)] = bcc_res[1];
+  unsigned char bcc2_res[2], bcc2 = calcBCC2Field(buf, size);
+  int bcc2_size = stuffByte(bcc2, bcc2_res);
+  linkLayer->frame->data[new_size + (i++)] = bcc2_res[0];
 
-  linkLayer->frame[new_size + (i++)] = FLAG;
+  if (bcc2_size == 2)
+    linkLayer->frame->data[new_size + (i++)] = bcc2_res[1];
 
-  linkLayer->frameSize = new_size + i;
+  linkLayer->frame->data[new_size + i] = FLAG;
+
+  linkLayer->frame->end = new_size + i + 1;
   return new_size + i;
 }
 
 /* WRITE FUNCTIONS */
 int sendAndAlarm(struct linkLayer *linkLayer, int fd) {
-  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
   // set alarm
   alarm(linkLayer->timeout);
   return res;
@@ -228,7 +238,7 @@ transitions byteToTransitionSET(unsigned char byte, unsigned char *buf,
 }
 
 transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
-                               state curr_state) {
+                               state curr_state, bool isRecv) {
   transitions transition;
   if (curr_state == CS_ST && byte == calcBCCField(buf)) {
     transition = BCC_RCV;
@@ -237,8 +247,17 @@ transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
     case FLAG:
       transition = FLAG_RCV;
       break;
+    case A_RECEIVER:
+      if (isRecv)
+        transition = A_RCV;
+      else
+        transition = OTHER_RCV;
+      break;
     case A_SENDER:
-      transition = A_RCV;
+      if (!isRecv)
+        transition = A_RCV;
+      else
+        transition = OTHER_RCV;
       break;
     case C_UA:
       transition = CS_RCV;
@@ -344,14 +363,16 @@ transitions byteToTransitionDISC(unsigned char byte, unsigned char *buf,
 /* llopen BACKEND */
 /* receiver */
 int inputLoopSET(struct linkLayer *linkLayer, int fd) {
-  unsigned char currByte, buf[MAX_SIZE];
+  unsigned char currByte = 0x00, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
   transitions transition;
 
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
-    if (res < 0) { // if we get interrupted, it might be the alarm
+    if (res == 0) {
+      continue;
+    } else if (res < 0) { // if we get interrupted, it might be the alarm
       if (resendHandler(linkLayer, fd) < 0) {
         return -1;
       }
@@ -369,11 +390,12 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
   return 0;
 }
 
-int sendUAMsg(struct linkLayer *linkLayer, int fd) {
-  assembleSUFrame(linkLayer, UA_MSG);
+int sendUAMsg(struct linkLayer *linkLayer, int fd, bool isRecv) {
+  // when we are the receiver, we send the answer as transmitter
+  assembleSUFrame(linkLayer, isRecv ? UASEND_MSG : UARECV_MSG);
 
   // send msg
-  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
   if (res < 0) {
     perror("Failed sending UA");
     return -1;
@@ -383,21 +405,23 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd) {
 }
 
 /* transmiter */
-int inputLoopUA(struct linkLayer *linkLayer, int fd) {
-  unsigned char currByte, buf[MAX_SIZE];
+int inputLoopUA(struct linkLayer *linkLayer, int fd, bool isRecv) {
+  unsigned char currByte = 0x00, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
   transitions transition;
 
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
-    if (res < 0) { // if we get interrupted, it might be the alarm
+    if (res == 0) {
+      continue;
+    } else if (res < 0) { // if we get interrupted, it might be the alarm
       if (resendHandler(linkLayer, fd) < 0) {
         return -1;
       }
     }
 
-    transition = byteToTransitionUA(currByte, buf, curr_state);
+    transition = byteToTransitionUA(currByte, buf, curr_state, isRecv);
     curr_state = state_machine[curr_state][transition];
 
     if (curr_state == START_ST)
@@ -428,7 +452,7 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, RR_MSG);
 
   // send msg
-  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
   if (res < 0) {
     perror("Failed sending RR");
     return -1;
@@ -441,7 +465,7 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, REJ_MSG);
 
   // send msg
-  int res = write(fd, linkLayer->frame, linkLayer->frameSize);
+  int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
   if (res < 0) {
     perror("Failed sending REJ");
     return -1;
@@ -461,7 +485,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
 
   bool isNextEscape = false;
   state curr_state = START_ST;
-  unsigned char currByte;
+  unsigned char currByte = 0x00;
   transitions transition;
 
   while (curr_state != STOP_ST) {
@@ -541,14 +565,16 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
   int nextSeqNum = NEXTSEQUENCENUMBER(linkLayer);
   bool okAnswer = false;
   while (!okAnswer) {
-    unsigned char currByte, buf[MAX_SIZE];
+    unsigned char currByte = 0x00, buf[MAX_SIZE];
     int res, bufLen = 0;
     state curr_state = START_ST;
     transitions transition;
 
     while (curr_state != STOP_ST) {
       res = read(fd, &currByte, sizeof(unsigned char));
-      if (res < 0) { // if we get interrupted, it might be the alarm
+      if (res == 0) {
+        continue;
+      } else if (res < 0) { // if we get interrupted, it might be the alarm
         if (resendHandler(linkLayer, fd) < 0) {
           return -1;
         }
@@ -577,8 +603,6 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
 }
 
 /*llclose BACKEND */
-int sendUAMsg(struct linkLayer *linkLayer, int fd); // Defined in llopen BACKEND
-
 int sendDISCMsg(struct linkLayer *linkLayer, int fd, bool isRecv) {
   assembleSUFrame(linkLayer, isRecv ? DISCRECV_MSG : DISCSEND_MSG);
 
@@ -591,14 +615,16 @@ int sendDISCMsg(struct linkLayer *linkLayer, int fd, bool isRecv) {
 }
 
 int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv) {
-  unsigned char currByte, buf[MAX_SIZE];
+  unsigned char currByte = 0x00, buf[MAX_SIZE];
   int res = 0, bufLen = 0;
   state curr_state = START_ST;
   transitions transition;
 
   while (curr_state != STOP_ST) {
     res = read(fd, &currByte, sizeof(unsigned char));
-    if (res < 0) { // if we get interrupted, it might be the alarm
+    if (res == 0) {
+      continue;
+    } else if (res < 0) { // if we get interrupted, it might be the alarm
       if (resendHandler(linkLayer, fd) < 0) {
         return -1;
       }

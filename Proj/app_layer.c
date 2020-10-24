@@ -11,13 +11,8 @@
 static struct linkLayer linkLayer;
 static struct termios oldtio;
 
-void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate, long chunksize) {
-  linkLayer = initLinkLayer();
-
-  char port_str[20];
-  sprintf(port_str, "%d", port);
-  strcpy(linkLayer.port, PORTLOCATION);
-  strcat(linkLayer.port, port_str);
+void initAppLayer(struct applicationLayer *appLayer, int baudrate, long chunksize) {
+  linkLayer = initLinkLayer(); // TODO check error
 
   appLayer->chunksize = chunksize;
   if (setBaudRate(&linkLayer, baudrate) < 0)
@@ -29,6 +24,11 @@ int llopen(int porta, enum applicationStatus appStatus) {
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
   */
+  char port_str[20];
+  sprintf(port_str, "%d", porta);
+  strcpy(linkLayer.port, PORTLOCATION);
+  strcat(linkLayer.port, port_str);
+
   int fd = open(linkLayer.port, O_RDWR | O_NOCTTY);
   if (fd < 0) {
     perror(linkLayer.port);
@@ -146,9 +146,11 @@ int sendFile(struct applicationLayer * appLayer) {
 
   unsigned char *file_content =
       (unsigned char *)malloc(sizeof(unsigned char) * appLayer->file_size);
-  if (fread(file_content, sizeof(unsigned char), appLayer->file_size, fp) < 0) {
-    perror("File content read");
-    return -2;
+  if (appLayer->file_size > 0) { // empty file
+    if (fread(file_content, sizeof(unsigned char), appLayer->file_size, fp) == 0) {
+      perror("sendfile() read");
+      return -2;
+    }
   }
 
   // Send start control packet
@@ -264,7 +266,7 @@ void write_file(struct applicationLayer * appLayer, unsigned char *file_content)
     perror("Failed creating output file");
   } else {
     if (fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(),
-               fp) < 0) {
+               fp) == 0) {
       perror("Failed writting");
     } else {
       printf("\nSuccessfully wrote file contents to: %s\nFile size: %ld\n", out_file,

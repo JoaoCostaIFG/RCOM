@@ -16,7 +16,7 @@ struct applicationLayer {
   long chunksize;
 };
 
-void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate, long chunksize);
+void initAppLayer(struct applicationLayer *appLayer, int baudrate, long chunksize);
 
 int llopen(int porta, enum applicationStatus appStatus);
 

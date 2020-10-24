@@ -3,15 +3,17 @@
 #include "vector.h" // C:
 
 /* PRIVATE */
-static inline int vec_realloc(vector *vec, size_t reserve) {
-  vec->size = reserve;
-  vec->data =
+static int vec_realloc(vector *vec, size_t reserve) {
+  unsigned char *realloced_data =
       (unsigned char *)realloc(vec->data, sizeof(unsigned char) * reserve);
-  if (!vec->data)
+  if (realloced_data == NULL)
     return 1;
 
+  vec->data = realloced_data;
+  vec->size = reserve;
   if (vec->end > vec->size)
     vec->end = vec->size;
+
   return 0;
 }
 

@@ -29,7 +29,15 @@
 
 #define NEXTSEQUENCENUMBER(linkLayer) (linkLayer->sequenceNumber == 0 ? 1 : 0);
 
-enum SUMessageType { SET_MSG, DISCSEND_MSG, DISCRECV_MSG, UA_MSG, RR_MSG, REJ_MSG };
+enum SUMessageType {
+  SET_MSG,
+  DISCSEND_MSG,
+  DISCRECV_MSG,
+  UASEND_MSG,
+  UARECV_MSG,
+  RR_MSG,
+  REJ_MSG
+};
 
 enum SUByteField {
   FLAG1_FIELD = 0,
@@ -55,7 +63,7 @@ unsigned char calcBCC2Field(unsigned char *buf, int size);
 bool checkBCC2Field(unsigned char *buf, int size);
 
 /* STRING STUFFING */
-int stuffString(unsigned char str[], unsigned char res[], int size);
+int stuffString(unsigned char *str, unsigned char *res, int size);
 
 unsigned char destuffByte(unsigned char byte);
 
@@ -97,7 +105,7 @@ typedef enum {
 transitions byteToTransitionSET(unsigned char byte, unsigned char *buf,
                                 state curr_state);
 transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
-                               state curr_state);
+                               state curr_state, bool isRecv);
 transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
                               state curr_state);
 transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
@@ -122,9 +130,9 @@ static state state_machine[][6] = {
 /* llopen BACKEND */
 /* receiver */
 int inputLoopSET(struct linkLayer *linkLayer, int fd);
-int sendUAMsg(struct linkLayer *linkLayer, int fd);
+int sendUAMsg(struct linkLayer *linkLayer, int fd, bool isRecv);
 /* transmitter */
-int inputLoopUA(struct linkLayer *linkLayer, int fd);
+int inputLoopUA(struct linkLayer *linkLayer, int fd, bool isRecv);
 int sendSetMsg(struct linkLayer *linkLayer, int fd);
 
 /* llread BACKEND */
@@ -133,8 +141,6 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd);
 
 /* llclose BACKEND */
 int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv);
-int inputLoopUA(struct linkLayer *linkLayer, int fd);
 int sendDISCMsg(struct linkLayer *linkLayer, int fd, bool isRecv);
-int sendUAMsg(struct linkLayer *linkLayer, int fd);
 
 #endif // DATALINK_PRIV_H

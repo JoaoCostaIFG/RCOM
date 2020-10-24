@@ -8,10 +8,10 @@ int initConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
 
   int failed = 0;
   if (isReceiver) {
-    if (inputLoopSET(linkLayer, fd) < 0 || sendUAMsg(linkLayer, fd) < 0)
+    if (inputLoopSET(linkLayer, fd) < 0 || sendUAMsg(linkLayer, fd, true) < 0)
       failed = -1;
   } else {
-    if (sendSetMsg(linkLayer, fd) < 0 || inputLoopUA(linkLayer, fd) < 0)
+    if (sendSetMsg(linkLayer, fd) < 0 || inputLoopUA(linkLayer, fd, false) < 0)
       failed = -1;
   }
 
@@ -30,12 +30,12 @@ int endConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
   int failed = 0;
   if (isReceiver) {
     if (inputLoopDISC(linkLayer, fd, true) < 0 || sendDISCMsg(linkLayer, fd, true) < 0 ||
-        inputLoopUA(linkLayer, fd))
+        inputLoopUA(linkLayer, fd, true) < 0)
       failed = 1;
   } else {
     if (sendDISCMsg(linkLayer, fd, false) < 0 || inputLoopDISC(linkLayer, fd, false) < 0 ||
-        sendUAMsg(linkLayer, fd) < 0)
-      failed = -1;
+        sendUAMsg(linkLayer, fd, false) < 0)
+      failed = 1;
   }
 
   if (!failed) {
@@ -50,8 +50,10 @@ int setBaudRate(struct linkLayer *linkLayer, int baudrate) {
   switch (baudrate) {
   case 0:
     linkLayer->baudRate = B0;
-    return B50;
+    return B0;
+  case 50:
     linkLayer->baudRate = B50;
+    return B50;
   case 75:
     linkLayer->baudRate = B75;
     return B75;
