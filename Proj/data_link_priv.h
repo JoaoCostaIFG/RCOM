@@ -10,6 +10,7 @@
 // I, SET, DISC: commands (protegidas por temporizador (Allah))
 // UA, RR, REJ: answers
 
+#define HEADER_LEN 4
 #define FLAG 0x7e
 #define A_SENDER 0x03   // requests de transmissor e respetivas respostas
 #define A_RECEIVER 0x01 // requests de emissor e respetivas respostas

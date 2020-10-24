@@ -170,7 +170,7 @@ int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
     return -1;
   }
   int new_size = stuffString(buf, stuffed_string, size);
-  int i = 4;
+  int i = HEADER_LEN;
   memcpy(linkLayer->frame + i, stuffed_string, new_size);
 
   unsigned char bcc_res[2], bcc = calcBCC2Field(buf, size);
@@ -528,7 +528,6 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
     free_vector(buf);
     return 0;
   }
-  fprintf(stderr, "\n");
 }
 
 /* llwrite BACKEND */

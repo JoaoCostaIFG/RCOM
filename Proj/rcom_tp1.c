@@ -14,6 +14,36 @@ static int port = -1;
 static long chunksize = 256; // TODO
 static int baudrate = 38400;
 
+void print_connection_info() {
+  printf("==========================\n"
+         "= Connection information =\n"
+         "==========================\n"
+         "= Baud rate: %d\n"
+         "= Port: %d\n",
+         baudrate, port);
+
+  if (appLayer.status == RECEIVER) {
+    printf("= Status: RECEIVER\n");
+
+    char out_file[512];
+    if (strcmp(appLayer.file_name, "")) { // not empty
+      stpcpy(out_file, appLayer.file_name);
+    } else {
+      stpcpy(out_file, "to be determined");
+    }
+
+    printf("= File: %s\n", out_file);
+  } else {
+    printf("= Status: TRANSMITTER\n"
+           "= File: %s\n"
+           "= Chunksize: %ld\n",
+           appLayer.file_name, chunksize);
+  }
+
+  printf("==========================\n");
+  fflush(stdout);
+}
+
 void print_usage() {
   fprintf(stderr, "Usage:\t -s <RECEIVER|TRANSMITTER> -p <SerialPort> -f "
                   "<file_name> -b <baudrate>\n\tex: "
@@ -83,6 +113,8 @@ void parseArgs(int argc, char **argv) {
 }
 
 int sendFile() {
+  printf("Sending file..\n");
+
   FILE *fp = fopen(appLayer.file_name, "rb");
   if (fp == NULL) {
     perror(appLayer.file_name);
@@ -145,7 +177,9 @@ int sendFile() {
 }
 
 int receiveFile(unsigned char **res) {
-  unsigned char *buf = NULL; // TODO free buffs
+  printf("Receiving file..\n");
+
+  unsigned char *buf = NULL;
   bool stop = false;
   do {
     int n = llread(appLayer.fd, (char **)&buf);
@@ -196,37 +230,8 @@ int receiveFile(unsigned char **res) {
     }
   }
 
+  free(buf);
   return 0;
-}
-
-void print_connection_info() {
-  printf("==========================\n"
-         "= Connection information =\n"
-         "==========================\n"
-         "= Baud rate: %d\n"
-         "= Port: %d\n",
-         baudrate, port);
-
-  if (appLayer.status == RECEIVER) {
-    printf("= Status: RECEIVER\n");
-
-    char out_file[512];
-    if (strcmp(appLayer.file_name, "")) { // not empty
-      stpcpy(out_file, appLayer.file_name);
-    } else {
-      stpcpy(out_file, "to be determined");
-    }
-
-    printf("= File: %s\n", out_file);
-  } else {
-    printf("= Status: TRANSMITTER\n"
-           "= File: %s\n"
-           "= Chunksize: %ld\n",
-           appLayer.file_name, chunksize);
-  }
-
-  printf("==========================\n");
-  fflush(stdout);
 }
 
 void write_file(unsigned char *file_content) {
