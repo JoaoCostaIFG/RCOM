@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
-#include "app_layer.h"
+#include "app_layer_priv.h"
 #include "data_link.h"
 
 static struct linkLayer linkLayer;
 static struct termios oldtio;
-static unsigned char *startPacket;
 
-void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate) {
+void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate, long chunksize) {
   linkLayer = initLinkLayer();
 
   char port_str[20];
@@ -19,6 +19,7 @@ void initAppLayer(struct applicationLayer *appLayer, int port, int baudrate) {
   strcpy(linkLayer.port, PORTLOCATION);
   strcat(linkLayer.port, port_str);
 
+  appLayer->chunksize = chunksize;
   if (setBaudRate(&linkLayer, baudrate) < 0)
     fprintf(stderr, "Invalid baudrate. Using default: %d\n", DFLTBAUDRATE);
 }
@@ -79,69 +80,6 @@ int llopen(int porta, enum applicationStatus appStatus) {
   return fd;
 }
 
-int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
-                          unsigned char **buf) {
-  // C = 2/3 | T1 - L1 - V1 | T2 - L2 - V2 | ...
-  // T (type): 0 tamanho file, 1 nome file, etc...
-  // L (byte): length
-  // V: valor (L length bytes)
-
-  /* assemble packet */
-  unsigned char *packet;
-  int file_name_len = strlen(appLayer->file_name);
-  int length = 1 + 2 + file_name_len + 2 + sizeof(long);
-  packet = (unsigned char *)malloc(length * sizeof(unsigned char));
-  if (packet == NULL) {
-    perror("App layer packet instantiation");
-    return -1;
-  }
-
-  int curr_ind = 0;
-  if (is_end)
-    packet[curr_ind++] = C_END;
-  else
-    packet[curr_ind++] = C_START;
-
-  // TLV file size
-  packet[curr_ind++] = T_SIZE;
-  packet[curr_ind++] = sizeof(long);
-  memcpy(packet + curr_ind, &appLayer->file_size, sizeof(long));
-  curr_ind += sizeof(long);
-
-  // TLV file name
-  packet[curr_ind++] = T_NAME;
-  packet[curr_ind++] = file_name_len;
-  memcpy(packet + curr_ind, appLayer->file_name, file_name_len);
-  *buf = packet;
-
-  return length;
-}
-
-int assembleInfoPacket(char *buffer, int length, unsigned char **res) {
-  // C = 1 | N | L2 - L1: 256 * L2 + L1 = k | P1..Pk (k bytes)
-  /* assemble packet */
-  static unsigned char n =
-      MAXSEQNUM; // unsigned integer overflow is defined >:(
-  ++n;
-
-  int new_length = length + 4;
-  unsigned char *packet =
-      (unsigned char *)malloc(new_length * sizeof(unsigned char));
-  if (packet == NULL) {
-    perror("App layer packet instantiation");
-    return -1;
-  }
-
-  packet[C_CONTROL] = C_DATA;
-  packet[SEQ_NUMBER] = n;
-  packet[L2] = (unsigned char)(length / L2VAL);
-  packet[L1] = (unsigned char)(length % L2VAL);
-  memcpy(packet + 4, buffer, sizeof(char) * length);
-
-  *res = packet;
-  return new_length;
-}
-
 int llwrite(int fd, char *buffer, int length) {
   if (sendFrame(&linkLayer, fd, (unsigned char *)buffer, length) < 0)
     return -1;
@@ -180,76 +118,158 @@ int llclose(int fd, enum applicationStatus appStatus) {
   return close(fd);
 }
 
-/* llread BACKEND */
-int parseControlPacket(unsigned char *packet) {
-
-  int curr_ind = C_CONTROL + 1;
-  int size_type = packet[curr_ind++];
-  if (size_type != T_SIZE) {
-    fprintf(stderr, "Invalid size type %d\n", size_type);
-    return -1;
-  }
-
-  int size_length = packet[curr_ind++];
-  curr_ind += size_length;
-
-  int name_type = packet[curr_ind++];
-  if (name_type != T_NAME) {
-    fprintf(stderr, "Invalid name type %d\n", name_type);
-    return -1;
-  }
-
-  if (packet[C_CONTROL] == C_START)
-    startPacket = packet;
-
-  return 0;
-}
-
-int parsePacket(unsigned char *packet, int packet_length) {
-  static unsigned char n =
-      MAXSEQNUM; // unsigned integer overflow is defined >:(
-
-  if (packet[C_CONTROL] == C_DATA) { // Verifications in case of data
-    ++n;
-    if (packet[SEQ_NUMBER] != n) { // Invalid sequence number
-      fprintf(stderr, "Sq num: %d_%d\n", packet[SEQ_NUMBER], n);
-      free(packet);
-      return -2;
-    }
-
-    int expected_length = packet[L2] * L2VAL + packet[L1] + 4;
-    if (expected_length != packet_length) {
-      fprintf(stderr, "Invalid length: %d_%d\n", expected_length,
-              packet_length);
-      free(packet);
-      return -2;
-    }
-
-  } else if (packet[C_CONTROL] == C_START ||
-             packet[C_CONTROL] == C_END) { // Start and End
-
-    if (parseControlPacket(packet) < 0) {
-      free(packet);
-      return -3;
-    }
-
-  } else {
-    fprintf(stderr, "Seq header %d\n", packet[C_CONTROL]);
-    free(packet);
-    return -3; // Unexpected C header
-  }
-
-  return packet[C_CONTROL];
-}
-
-unsigned char *getStartPacket() { return startPacket; }
-
 long getStartPacketFileSize() {
   long file_size;
-  memcpy(&file_size, startPacket + 3, sizeof(long));
+  memcpy(&file_size, getStartPacket() + 3, sizeof(long));
   return file_size;
 }
 
 char *getStartPacketFileName() {
-  return (char *)(startPacket + 2 + sizeof(long) + 3);
+  return (char *)(getStartPacket() + 2 + sizeof(long) + 3);
+}
+
+int sendFile(struct applicationLayer * appLayer) {
+  printf("Sending file..\n");
+
+  FILE *fp = fopen(appLayer->file_name, "rb");
+  if (fp == NULL) {
+    perror(appLayer->file_name);
+    return -1;
+  }
+
+  struct stat sb;
+  if (stat(appLayer->file_name, &sb) == -1) {
+    perror("stat");
+    return -1;
+  }
+  appLayer->file_size = sb.st_size;
+
+  unsigned char *file_content =
+      (unsigned char *)malloc(sizeof(unsigned char) * appLayer->file_size);
+  if (fread(file_content, sizeof(unsigned char), appLayer->file_size, fp) < 0) {
+    perror("File content read");
+    return -2;
+  }
+
+  // Send start control packet
+  unsigned char *start_packet = NULL;
+  int start_length = assembleControlPacket(appLayer, false, &start_packet);
+  if (llwrite(appLayer->fd, (char *)start_packet, start_length) < 0) {
+    free(start_packet);
+    return -3;
+  }
+
+  // Send info packets
+  long ind = 0;
+  while (ind < appLayer->file_size) {
+    // send info fragment
+    unsigned char *packet = NULL;
+    int length;
+    if (appLayer->file_size - ind >= appLayer->chunksize)
+      length =
+          assembleInfoPacket((char *)file_content + ind, appLayer->chunksize, &packet);
+    else
+      length = assembleInfoPacket((char *)file_content + ind,
+                                  appLayer->file_size - ind, &packet);
+
+    if (llwrite(appLayer->fd, (char *)packet, length) < 0) {
+      free(packet);
+      return -4;
+    }
+
+    free(packet);
+    ind += appLayer->chunksize;
+  }
+
+  // Send end control packet
+  unsigned char *end_packet = NULL;
+  int end_length = assembleControlPacket(appLayer, true, &end_packet);
+  if (llwrite(appLayer->fd, (char *)end_packet, end_length) < 0) {
+    free(end_packet);
+    return -5;
+  }
+
+  return appLayer->file_size;
+}
+
+int receiveFile(struct applicationLayer * appLayer, unsigned char **res) {
+  printf("Receiving file..\n");
+
+  unsigned char *buf = NULL;
+  bool stop = false;
+  do {
+    int n = llread(appLayer->fd, (char **)&buf);
+    if (n < 0) {
+      perror("Morreu mesmo");
+      return -1;
+    } else if (n == 0) { // Invalid packet, try again
+      stop = false;
+    } else {
+      int status = parsePacket(buf, n);
+      if (status < 0)
+        perror("invalid packet formatting");
+      else if (status == C_START)
+        stop = true;
+      else
+        stop = false;
+    }
+
+  } while (!stop);
+
+  *res =
+      (unsigned char *)malloc(sizeof(unsigned char) * getStartPacketFileSize());
+
+  stop = false;
+  int curr_file_n = 0;
+  while (!stop) {
+    int n = llread(appLayer->fd, (char **)&buf);
+
+    if (n < 0) {
+      perror("Morreu mesmo");
+      free(res);
+      return -1;
+    } else if (n == 0) {
+      stop = false;
+    } else {
+      int status = parsePacket(buf, n);
+      if (status < 0)
+        perror("invalid packet formatting");
+      else if (status == C_END)
+        stop = true;
+      else if (status == C_DATA) {
+        memcpy(*res + curr_file_n, buf + 4, n - 4);
+
+        curr_file_n += n - 4;
+        stop = false;
+      } else
+        stop = false;
+    }
+  }
+
+  free(buf);
+  return 0;
+}
+
+void write_file(struct applicationLayer * appLayer, unsigned char *file_content) {
+  char out_file[512];
+  if (strcmp(appLayer->file_name, "")) { // not empty
+    stpcpy(out_file, appLayer->file_name);
+  } else {
+    strcpy(out_file, "out/");
+    strcat(out_file, getStartPacketFileName());
+  }
+
+  FILE *fp = fopen(out_file, "w+b");
+  if (fp == NULL) {
+    perror("Failed creating output file");
+  } else {
+    if (fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(),
+               fp) < 0) {
+      perror("Failed writting");
+    } else {
+      printf("\nSuccessfully wrote file contents to: %s\nFile size: %ld\n", out_file,
+             getStartPacketFileSize());
+    }
+    fclose(fp);
+  }
 }

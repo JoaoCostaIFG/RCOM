@@ -11,7 +11,7 @@
 
 static struct applicationLayer appLayer;
 static int port = -1;
-static long chunksize = 256; // TODO
+static long chunksize = 256;
 static int baudrate = 38400;
 
 void print_connection_info() {
@@ -112,158 +112,12 @@ void parseArgs(int argc, char **argv) {
   }
 }
 
-int sendFile() {
-  printf("Sending file..\n");
-
-  FILE *fp = fopen(appLayer.file_name, "rb");
-  if (fp == NULL) {
-    perror(appLayer.file_name);
-    return -1;
-  }
-
-  struct stat sb;
-  if (stat(appLayer.file_name, &sb) == -1) {
-    perror("stat");
-    return -1;
-  }
-  appLayer.file_size = sb.st_size;
-
-  unsigned char *file_content =
-      (unsigned char *)malloc(sizeof(unsigned char) * appLayer.file_size);
-  if (fread(file_content, sizeof(unsigned char), appLayer.file_size, fp) < 0) {
-    perror("File content read");
-    return -2;
-  }
-
-  // Send start control packet
-  unsigned char *start_packet = NULL;
-  int start_length = assembleControlPacket(&appLayer, false, &start_packet);
-  if (llwrite(appLayer.fd, (char *)start_packet, start_length) < 0) {
-    free(start_packet);
-    return -3;
-  }
-
-  // Send info packets
-  long ind = 0;
-  while (ind < appLayer.file_size) {
-    // send info fragment
-    unsigned char *packet = NULL;
-    int length;
-    if (appLayer.file_size - ind >= chunksize)
-      length =
-          assembleInfoPacket((char *)file_content + ind, chunksize, &packet);
-    else
-      length = assembleInfoPacket((char *)file_content + ind,
-                                  appLayer.file_size - ind, &packet);
-
-    if (llwrite(appLayer.fd, (char *)packet, length) < 0) {
-      free(packet);
-      return -4;
-    }
-
-    free(packet);
-    ind += chunksize;
-  }
-
-  // Send end control packet
-  unsigned char *end_packet = NULL;
-  int end_length = assembleControlPacket(&appLayer, true, &end_packet);
-  if (llwrite(appLayer.fd, (char *)end_packet, end_length) < 0) {
-    free(end_packet);
-    return -5;
-  }
-
-  return appLayer.file_size;
-}
-
-int receiveFile(unsigned char **res) {
-  printf("Receiving file..\n");
-
-  unsigned char *buf = NULL;
-  bool stop = false;
-  do {
-    int n = llread(appLayer.fd, (char **)&buf);
-    if (n < 0) {
-      perror("Morreu mesmo");
-      return -1;
-    } else if (n == 0) { // Invalid packet, try again
-      stop = false;
-    } else {
-      int status = parsePacket(buf, n);
-      if (status < 0)
-        perror("invalid packet formatting");
-      else if (status == C_START)
-        stop = true;
-      else
-        stop = false;
-    }
-
-  } while (!stop);
-
-  *res =
-      (unsigned char *)malloc(sizeof(unsigned char) * getStartPacketFileSize());
-
-  stop = false;
-  int curr_file_n = 0;
-  while (!stop) {
-    int n = llread(appLayer.fd, (char **)&buf);
-
-    if (n < 0) {
-      perror("Morreu mesmo");
-      free(res);
-      return -1;
-    } else if (n == 0) {
-      stop = false;
-    } else {
-      int status = parsePacket(buf, n);
-      if (status < 0)
-        perror("invalid packet formatting");
-      else if (status == C_END)
-        stop = true;
-      else if (status == C_DATA) {
-        memcpy(*res + curr_file_n, buf + 4, n - 4);
-
-        curr_file_n += n - 4;
-        stop = false;
-      } else
-        stop = false;
-    }
-  }
-
-  free(buf);
-  return 0;
-}
-
-void write_file(unsigned char *file_content) {
-  char out_file[512];
-  if (strcmp(appLayer.file_name, "")) { // not empty
-    stpcpy(out_file, appLayer.file_name);
-  } else {
-    strcpy(out_file, "out/");
-    strcat(out_file, getStartPacketFileName());
-  }
-
-  FILE *fp = fopen(out_file, "w+b");
-  if (fp == NULL) {
-    perror("Failed creating output file");
-  } else {
-    if (fwrite(file_content, sizeof(unsigned char), getStartPacketFileSize(),
-               fp) < 0) {
-      perror("Failed writting");
-    } else {
-      printf("\nSuccessfully wrote file contents to: %s\nFile size: %ld\n", out_file,
-             getStartPacketFileSize());
-    }
-    fclose(fp);
-  }
-}
-
 int main(int argc, char **argv) {
   appLayer.status = NONE;
   strcpy(appLayer.file_name, "");
   // parse args
   parseArgs(argc, argv);
-  initAppLayer(&appLayer, port, baudrate);
+  initAppLayer(&appLayer, port, baudrate, chunksize);
 
 
   if (port < 0) {
@@ -289,16 +143,16 @@ int main(int argc, char **argv) {
   }
 
   if (appLayer.status == TRANSMITTER) {
-    if (sendFile() < 0)
+    if (sendFile(&appLayer) < 0)
       return -1;
   } else { // RECEIVER
     unsigned char *file_content = NULL;
-    if (receiveFile(&file_content) < 0) {
+    if (receiveFile(&appLayer, &file_content) < 0) {
       fprintf(stderr, "receiveFile() failed\n");
       exit(-2);
     }
 
-    write_file(file_content);
+    write_file(&appLayer, file_content);
     free(file_content);
   }
 

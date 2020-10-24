@@ -1,5 +1,5 @@
 NAME = rcom_tp1
-SRC = rcom_tp1.c app_layer.c data_link.c data_link_priv.c vector.c
+SRC = rcom_tp1.c app_layer.c app_layer_priv.c data_link.c data_link_priv.c vector.c
 OBJ = ${SRC:.c=.o}
 
 # compiler and linker
