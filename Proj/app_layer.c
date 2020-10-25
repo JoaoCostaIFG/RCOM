@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "app_layer_priv.h"
 #include "data_link.h"
@@ -11,7 +11,8 @@
 static struct linkLayer linkLayer;
 static struct termios oldtio;
 
-void initAppLayer(struct applicationLayer *appLayer, int baudrate, long chunksize) {
+void initAppLayer(struct applicationLayer *appLayer, int baudrate,
+                  long chunksize) {
   linkLayer = initLinkLayer(); // TODO check error
 
   appLayer->chunksize = chunksize;
@@ -128,7 +129,22 @@ char *getStartPacketFileName() {
   return (char *)(getStartPacket() + 2 + sizeof(long) + 3);
 }
 
-int sendFile(struct applicationLayer * appLayer) {
+void drawProgress(int currPerc, int divs, bool isRedraw) {
+  int full = currPerc * divs / 100;
+  if (isRedraw) {
+    for (int i = 0; i < divs + 2; ++i)
+      printf("\b");
+  }
+  printf("[");
+  for (int i = 0; i < full; ++i)
+    printf("+");
+  for (int i = full; i < divs; ++i)
+    printf("-");
+  printf("]");
+  fflush(stdout);
+}
+
+int sendFile(struct applicationLayer *appLayer) {
   printf("Sending file..\n");
 
   FILE *fp = fopen(appLayer->file_name, "rb");
@@ -147,7 +163,8 @@ int sendFile(struct applicationLayer * appLayer) {
   unsigned char *file_content =
       (unsigned char *)malloc(sizeof(unsigned char) * appLayer->file_size);
   if (appLayer->file_size > 0) { // empty file
-    if (fread(file_content, sizeof(unsigned char), appLayer->file_size, fp) == 0) {
+    if (fread(file_content, sizeof(unsigned char), appLayer->file_size, fp) ==
+        0) {
       perror("sendfile() read");
       return -2;
     }
@@ -161,6 +178,8 @@ int sendFile(struct applicationLayer * appLayer) {
     return -3;
   }
 
+  puts("");
+  drawProgress(0, 100, false);
   // Send info packets
   long ind = 0;
   while (ind < appLayer->file_size) {
@@ -168,11 +187,13 @@ int sendFile(struct applicationLayer * appLayer) {
     unsigned char *packet = NULL;
     int length;
     if (appLayer->file_size - ind >= appLayer->chunksize)
-      length =
-          assembleInfoPacket((char *)file_content + ind, appLayer->chunksize, &packet);
+      length = assembleInfoPacket((char *)file_content + ind,
+                                  appLayer->chunksize, &packet);
     else
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->file_size - ind, &packet);
+
+    drawProgress(ind * 100 / appLayer->file_size, 100, true);
 
     if (llwrite(appLayer->fd, (char *)packet, length) < 0) {
       free(packet);
@@ -191,10 +212,13 @@ int sendFile(struct applicationLayer * appLayer) {
     return -5;
   }
 
+  drawProgress(100, 100, true);
+  puts("");
+
   return appLayer->file_size;
 }
 
-int receiveFile(struct applicationLayer * appLayer, unsigned char **res) {
+int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
   printf("Receiving file..\n");
 
   unsigned char *buf = NULL;
@@ -218,13 +242,17 @@ int receiveFile(struct applicationLayer * appLayer, unsigned char **res) {
 
   } while (!stop);
 
-  *res =
-      (unsigned char *)malloc(sizeof(unsigned char) * getStartPacketFileSize());
+  long fileSize = getStartPacketFileSize(), currSize = 0;
+  *res = (unsigned char *)malloc(sizeof(unsigned char) * fileSize);
 
+  puts("");
+  drawProgress(0, 100, false);
   stop = false;
   int curr_file_n = 0;
   while (!stop) {
     int n = llread(appLayer->fd, (char **)&buf);
+    currSize += n;
+    drawProgress(currSize * 100 / fileSize, 100, true);
 
     if (n < 0) {
       perror("Morreu mesmo");
@@ -248,11 +276,14 @@ int receiveFile(struct applicationLayer * appLayer, unsigned char **res) {
     }
   }
 
+  drawProgress(100, 100, true);
+  puts("");
   free(buf);
   return 0;
 }
 
-void write_file(struct applicationLayer * appLayer, unsigned char *file_content) {
+void write_file(struct applicationLayer *appLayer,
+                unsigned char *file_content) {
   char out_file[512];
   if (strcmp(appLayer->file_name, "")) { // not empty
     stpcpy(out_file, appLayer->file_name);
@@ -269,8 +300,8 @@ void write_file(struct applicationLayer * appLayer, unsigned char *file_content)
                fp) == 0) {
       perror("Failed writting");
     } else {
-      printf("\nSuccessfully wrote file contents to: %s\nFile size: %ld\n", out_file,
-             getStartPacketFileSize());
+      printf("\nSuccessfully wrote file contents to: %s\nFile size: %ld\n",
+             out_file, getStartPacketFileSize());
     }
     fclose(fp);
   }
