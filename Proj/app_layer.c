@@ -132,15 +132,20 @@ char *getStartPacketFileName() {
 void drawProgress(int currPerc, int divs, bool isRedraw) {
   int full = currPerc * divs / 100;
   if (isRedraw) {
-    for (int i = 0; i < divs + 2; ++i)
+    for (int i = 0; i < divs + 6; ++i)
       printf("\b");
   }
+
   printf("[");
   for (int i = 0; i < full; ++i)
-    printf("+");
-  for (int i = full; i < divs; ++i)
     printf("-");
-  printf("]");
+  printf("\33\[33m\33\[1m");
+  printf(full % 2 == 0 ? "C" : "c");
+  printf("\33\[0m");
+  for (int i = full + 1; i < divs; ++i)
+    printf(i % 2 == 0 ? "o" : " ");
+  printf("] %d%%", currPerc);
+
   fflush(stdout);
 }
 
