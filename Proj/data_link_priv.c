@@ -448,7 +448,6 @@ int sendSetMsg(struct linkLayer *linkLayer, int fd) {
 
 /* llread BACKEND */
 int sendRRMsg(struct linkLayer *linkLayer, int fd) {
-  FLIPSEQUENCENUMBER(linkLayer);
   assembleSUFrame(linkLayer, RR_MSG);
 
   // send msg
@@ -519,20 +518,22 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
 
   bool isOk = true;
   if (!checkBCC2Field(buf->data + 4, buf->end - 6)) {
-    // BCC2 is not ok
+    // BCC2 is not ok -> REJ
     fprintf(stderr, "BCC2 is not OK!");
     isOk = false;
   }
 
+  bool isRepeated = false;
   // Check sequence number for missed/duplicate packets
-  if (linkLayer->sequenceNumber == 0) {
-    if (buf->data[C_FIELD] == C_CTRL1)
-      isOk = false;
-  } else if (buf->data[C_FIELD] == C_CTRL0)
-    isOk = false;
+  if ((linkLayer->sequenceNumber == 0 && buf->data[C_FIELD] == C_CTRL1) ||
+      (linkLayer->sequenceNumber == 1 && buf->data[C_FIELD] == C_CTRL0)) {
+    isRepeated = true;
+  }
 
-  if (isOk) {
-    sendRRMsg(linkLayer, fd);
+  if (isOk && !isRepeated) {
+    // all gud RR
+    FLIPSEQUENCENUMBER(linkLayer);
+    sendRRMsg(linkLayer, fd); // flips sequence number
 
     int info_size = (buf->end - 1) - 5; // Buflen is ahead by one
     packet = (unsigned char *)malloc(sizeof(unsigned char) * info_size);
@@ -546,7 +547,14 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
     free_vector(buf);
     *buffer = packet;
     return info_size;
+  } else if (isRepeated) {
+    // repeated RR
+    sendRRMsg(linkLayer, fd); // flips sequence number
+    packet = NULL;
+    free_vector(buf);
+    return 0;
   } else {
+    // REJ
     packet = NULL;
     sendREJMsg(linkLayer, fd);
     free_vector(buf);
@@ -589,10 +597,19 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
         buf[bufLen++] = currByte;
     }
 
+    // check the received answer
     if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) {
+      // RR
+      // flip sequenceNumber
       okAnswer = true;
       FLIPSEQUENCENUMBER(linkLayer);
-    } else if (buf[C_FIELD] == (C_REJ | (nextSeqNum << 7))) {
+    } else if (buf[C_FIELD] == (C_RR | (linkLayer->sequenceNumber << 7))) {
+      // RR repeated
+      // do not flip sequenceNumber
+      sendAndAlarmReset(linkLayer, fd);
+    } else if (buf[C_FIELD] == (C_REJ | (linkLayer->sequenceNumber << 7))) {
+      // REJ
+      // sequence number isn't flipped
       // reset attempts (we got an answer) and resend
       sendAndAlarmReset(linkLayer, fd);
     }

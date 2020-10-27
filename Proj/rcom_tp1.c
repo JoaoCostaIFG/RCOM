@@ -12,7 +12,7 @@
 static struct applicationLayer appLayer;
 static int port = -1;
 static long chunksize = 256;
-static int baudrate = 460800; // 38400;
+static int baudrate = 38400;
 
 void print_connection_info() {
   printf("==========================\n"

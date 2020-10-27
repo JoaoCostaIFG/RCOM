@@ -93,20 +93,20 @@ int parseControlPacket(unsigned char *packet) {
 }
 
 int parsePacket(unsigned char *packet, int packet_length) {
-  static unsigned char n =
-      MAXSEQNUM; // unsigned integer overflow is defined >:(
+  // unsigned integer overflow is defined >:(
+  static unsigned char n = 0;
 
   if (packet[C_CONTROL] == C_DATA) { // Verifications in case of data
-    ++n;
     if (packet[SEQ_NUMBER] != n) { // Invalid sequence number
-      fprintf(stderr, "Sq num: %d_%d\n", packet[SEQ_NUMBER], n);
+      fprintf(stderr, "Sq num: %d->%d\n", packet[SEQ_NUMBER], n);
       free(packet);
       return -2;
     }
+    ++n;
 
     int expected_length = packet[L2] * L2VAL + packet[L1] + 4;
     if (expected_length != packet_length) {
-      fprintf(stderr, "Invalid length: %d_%d\n", expected_length,
+      fprintf(stderr, "Invalid length: %d->%d\n", expected_length,
               packet_length);
       free(packet);
       return -2;

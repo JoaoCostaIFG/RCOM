@@ -8,6 +8,8 @@
 #include "app_layer_priv.h"
 #include "data_link.h"
 
+#define PROGRESSSIZE 70
+
 static struct linkLayer linkLayer;
 static struct termios oldtio;
 
@@ -131,8 +133,12 @@ char *getStartPacketFileName() {
 
 void drawProgress(int currPerc, int divs, bool isRedraw) {
   int full = currPerc * divs / 100;
+  if (full < 0)
+    full = 0;
+  else if (full > 100)
+    full = 100;
   if (isRedraw) {
-    for (int i = 0; i < divs + 6; ++i)
+    for (int i = 0; i < divs + 10; ++i)
       printf("\b");
   }
 
@@ -184,7 +190,7 @@ int sendFile(struct applicationLayer *appLayer) {
   }
 
   puts("");
-  drawProgress(0, 100, false);
+  drawProgress(0, PROGRESSSIZE, false);
   // Send info packets
   long ind = 0;
   while (ind < appLayer->file_size) {
@@ -198,7 +204,7 @@ int sendFile(struct applicationLayer *appLayer) {
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->file_size - ind, &packet);
 
-    drawProgress(ind * 100 / appLayer->file_size, 100, true);
+    drawProgress(ind * 100 / appLayer->file_size, PROGRESSSIZE, true);
 
     if (llwrite(appLayer->fd, (char *)packet, length) < 0) {
       free(packet);
@@ -217,7 +223,7 @@ int sendFile(struct applicationLayer *appLayer) {
     return -5;
   }
 
-  drawProgress(100, 100, true);
+  drawProgress(100, PROGRESSSIZE, true);
   puts("");
 
   return appLayer->file_size;
@@ -231,14 +237,14 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
   do {
     int n = llread(appLayer->fd, (char **)&buf);
     if (n < 0) {
-      perror("Morreu mesmo");
+      fprintf(stderr, "Morreu mesmo.\n");
       return -1;
     } else if (n == 0) { // Invalid packet, try again
       stop = false;
     } else {
       int status = parsePacket(buf, n);
       if (status < 0)
-        perror("invalid packet formatting");
+        fprintf(stderr, "Invalid packet formatting.\n");
       else if (status == C_START)
         stop = true;
       else
@@ -251,13 +257,13 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
   *res = (unsigned char *)malloc(sizeof(unsigned char) * fileSize);
 
   puts("");
-  drawProgress(0, 100, false);
+  drawProgress(0, PROGRESSSIZE, false);
   stop = false;
   int curr_file_n = 0;
   while (!stop) {
     int n = llread(appLayer->fd, (char **)&buf);
     currSize += n;
-    drawProgress(currSize * 100 / fileSize, 100, true);
+    drawProgress(currSize * 100 / fileSize, PROGRESSSIZE, true);
 
     if (n < 0) {
       perror("Morreu mesmo");
@@ -268,7 +274,7 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
     } else {
       int status = parsePacket(buf, n);
       if (status < 0)
-        perror("invalid packet formatting");
+        fprintf(stderr, "Invalid packet formatting.\n");
       else if (status == C_END)
         stop = true;
       else if (status == C_DATA) {
@@ -281,7 +287,7 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
     }
   }
 
-  drawProgress(100, 100, true);
+  drawProgress(100, PROGRESSSIZE, true);
   puts("");
   free(buf);
   return 0;
