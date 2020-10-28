@@ -500,6 +500,8 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
 
     if (curr_state == START_ST) {
       buf->end = 0;
+    } else if (curr_state == FLAG_ST) {
+      buf->end = 1;
     } else {
       if (isNextEscape) {
         --buf->end;

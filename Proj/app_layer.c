@@ -204,21 +204,23 @@ int sendFile(struct applicationLayer *appLayer) {
     // send info fragment
     unsigned char *packet = NULL;
     int length;
-    if (appLayer->file_size - ind >= appLayer->chunksize)
+    if (appLayer->file_size - ind >= appLayer->chunksize) {
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->chunksize, &packet);
-    else
+      trSize += appLayer->chunksize;
+    }
+    else {
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->file_size - ind, &packet);
-
-    trSize += length;
-    drawProgress(length * 100 / appLayer->file_size, PROGRESSSIZE, true);
+      trSize += appLayer->file_size - ind;
+    }
 
     if (llwrite(appLayer->fd, (char *)packet, length) < 0) {
       free(packet);
       return -4;
     }
 
+    drawProgress(length * 100 / appLayer->file_size, PROGRESSSIZE, true);
     free(packet);
     ind += appLayer->chunksize;
   }
@@ -270,8 +272,6 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
   int curr_file_n = 0;
   while (!stop) {
     int n = llread(appLayer->fd, (char **)&buf);
-    currSize += n;
-    drawProgress(currSize * 100 / fileSize, PROGRESSSIZE, true);
 
     if (n < 0) {
       perror("Morreu mesmo");
@@ -280,6 +280,9 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
     } else if (n == 0) {
       stop = false;
     } else {
+      currSize += n;
+      drawProgress(currSize * 100 / fileSize, PROGRESSSIZE, true);
+
       int status = parsePacket(buf, n);
       if (status < 0)
         fprintf(stderr, "Invalid packet formatting.\n");
