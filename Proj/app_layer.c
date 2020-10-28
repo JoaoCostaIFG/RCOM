@@ -132,11 +132,18 @@ char *getStartPacketFileName() {
 }
 
 void drawProgress(int currPerc, int divs, bool isRedraw) {
+  static int prev_full = -1;
   int full = currPerc * divs / 100;
   if (full < 0)
     full = 0;
-  else if (full > 100)
-    full = 100;
+  else if (full > divs)
+    full = divs;
+
+  if (full == prev_full)
+    return;
+  prev_full = full;
+
+  /* draw */
   if (isRedraw) {
     for (int i = 0; i < divs + 10; ++i)
       printf("\b");
@@ -192,7 +199,7 @@ int sendFile(struct applicationLayer *appLayer) {
   puts("");
   drawProgress(0, PROGRESSSIZE, false);
   // Send info packets
-  long ind = 0;
+  long ind = 0, trSize = 0;
   while (ind < appLayer->file_size) {
     // send info fragment
     unsigned char *packet = NULL;
@@ -204,7 +211,8 @@ int sendFile(struct applicationLayer *appLayer) {
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->file_size - ind, &packet);
 
-    drawProgress(ind * 100 / appLayer->file_size, PROGRESSSIZE, true);
+    trSize += length;
+    drawProgress(length * 100 / appLayer->file_size, PROGRESSSIZE, true);
 
     if (llwrite(appLayer->fd, (char *)packet, length) < 0) {
       free(packet);
