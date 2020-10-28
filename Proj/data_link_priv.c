@@ -381,10 +381,13 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
     transition = byteToTransitionSET(currByte, buf, curr_state);
     curr_state = state_machine[curr_state][transition];
 
-    if (curr_state == START_ST)
+    if (curr_state == START_ST) {
       bufLen = 0;
-    else
+    } else {
       buf[bufLen++] = currByte;
+      if (curr_state == FLAG_ST)
+        bufLen = 1;
+    }
   }
 
   return 0;
@@ -424,10 +427,13 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd, bool isRecv) {
     transition = byteToTransitionUA(currByte, buf, curr_state, isRecv);
     curr_state = state_machine[curr_state][transition];
 
-    if (curr_state == START_ST)
+    if (curr_state == START_ST) {
       bufLen = 0;
-    else
+    } else {
       buf[bufLen++] = currByte;
+      if (curr_state == FLAG_ST)
+        bufLen = 1;
+    }
   }
 
   alarm(0); // cancel pending alarm
@@ -501,7 +507,9 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
     if (curr_state == START_ST) {
       buf->end = 0;
     } else if (curr_state == FLAG_ST) {
-      buf->end = 1;
+      if (buf->end > 1)
+        buf->end = 1;
+      vec_push(buf, currByte);
     } else {
       if (isNextEscape) {
         --buf->end;
@@ -594,10 +602,13 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
       transition = byteToTransitionRR(currByte, buf, curr_state);
       curr_state = state_machine[curr_state][transition];
 
-      if (curr_state == START_ST)
+      if (curr_state == START_ST) {
         bufLen = 0;
-      else
+      } else {
         buf[bufLen++] = currByte;
+        if (curr_state == FLAG_ST)
+          bufLen = 1;
+      }
     }
 
     // check the received answer
@@ -653,10 +664,13 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv) {
     transition = byteToTransitionDISC(currByte, buf, curr_state, isRecv);
     curr_state = state_machine[curr_state][transition];
 
-    if (curr_state == START_ST)
+    if (curr_state == START_ST) {
       bufLen = 0;
-    else
+    } else {
       buf[bufLen++] = currByte;
+      if (curr_state == FLAG_ST)
+        bufLen = 1;
+    }
   }
 
   alarm(0); // cancel pending alarm

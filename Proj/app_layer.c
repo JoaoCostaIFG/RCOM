@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,9 +132,9 @@ char *getStartPacketFileName() {
   return (char *)(getStartPacket() + 2 + sizeof(long) + 3);
 }
 
-void drawProgress(int currPerc, int divs, bool isRedraw) {
+void drawProgress(float currPerc, int divs, bool isRedraw) {
   static int prev_full = -1;
-  int full = currPerc * divs / 100;
+  int full = (int)roundf(currPerc * divs);
   if (full < 0)
     full = 0;
   else if (full > divs)
@@ -157,7 +158,7 @@ void drawProgress(int currPerc, int divs, bool isRedraw) {
   printf("\33\[0m");
   for (int i = full + 1; i < divs; ++i)
     printf(i % 2 == 0 ? "o" : " ");
-  printf("] %d%%", currPerc);
+  printf("] %.2f%%", currPerc * 100);
 
   fflush(stdout);
 }
@@ -208,8 +209,7 @@ int sendFile(struct applicationLayer *appLayer) {
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->chunksize, &packet);
       trSize += appLayer->chunksize;
-    }
-    else {
+    } else {
       length = assembleInfoPacket((char *)file_content + ind,
                                   appLayer->file_size - ind, &packet);
       trSize += appLayer->file_size - ind;
@@ -220,7 +220,7 @@ int sendFile(struct applicationLayer *appLayer) {
       return -4;
     }
 
-    drawProgress(length * 100 / appLayer->file_size, PROGRESSSIZE, true);
+    drawProgress((float)trSize / appLayer->file_size, PROGRESSSIZE, true);
     free(packet);
     ind += appLayer->chunksize;
   }
@@ -263,7 +263,7 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
 
   } while (!stop);
 
-  long fileSize = getStartPacketFileSize(), currSize = 0;
+  long fileSize = getStartPacketFileSize();
   *res = (unsigned char *)malloc(sizeof(unsigned char) * fileSize);
 
   puts("");
@@ -280,9 +280,6 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
     } else if (n == 0) {
       stop = false;
     } else {
-      currSize += n;
-      drawProgress(currSize * 100 / fileSize, PROGRESSSIZE, true);
-
       int status = parsePacket(buf, n);
       if (status < 0)
         fprintf(stderr, "Invalid packet formatting.\n");
@@ -290,15 +287,15 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
         stop = true;
       else if (status == C_DATA) {
         memcpy(*res + curr_file_n, buf + 4, n - 4);
-
         curr_file_n += n - 4;
         stop = false;
       } else
         stop = false;
+      drawProgress((float)curr_file_n / fileSize, PROGRESSSIZE, true);
     }
   }
 
-  drawProgress(100, PROGRESSSIZE, true);
+  drawProgress(1, PROGRESSSIZE, true);
   puts("");
   free(buf);
   return 0;
