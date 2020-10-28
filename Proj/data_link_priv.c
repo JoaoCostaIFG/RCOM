@@ -557,6 +557,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
     return 0;
   } else {
     // REJ
+    fprintf(stderr, "REJ\n");
     packet = NULL;
     sendREJMsg(linkLayer, fd);
     free_vector(buf);
