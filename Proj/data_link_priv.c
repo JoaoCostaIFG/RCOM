@@ -18,6 +18,8 @@ void alrmHandler(int signo) {
 }
 
 int resendHandler(struct linkLayer *linkLayer, int fd) {
+  printf("RESEND\n");
+  fflush(stdout);
   if (errno != EINTR || !needResend) // the failure wasn't caused by the alarm
     return -1;
   needResend = false;

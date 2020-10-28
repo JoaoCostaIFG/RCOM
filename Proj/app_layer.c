@@ -57,8 +57,8 @@ int llopen(int porta, enum applicationStatus appStatus) {
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
     leitura do(s) próximo(s) caracter(es)
   */
-  newtio.c_cc[VTIME] = 0; /* inter-unsigned character timer unused */
-  newtio.c_cc[VMIN] = 1;  /* blocking read until 5 unsigned chars received */
+  newtio.c_cc[VTIME] = MYVTIME; /* inter-unsigned character timer unused */
+  newtio.c_cc[VMIN] = MYVMIN;  /* blocking read until X chars received */
   // clear queue
   tcflush(fd, TCIOFLUSH);
 

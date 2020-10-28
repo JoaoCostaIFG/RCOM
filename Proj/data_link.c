@@ -29,9 +29,10 @@ int endConnection(struct linkLayer *linkLayer, int fd, bool isReceiver) {
 
   int failed = 0;
   if (isReceiver) {
-    if (inputLoopDISC(linkLayer, fd, true) < 0 || sendDISCMsg(linkLayer, fd, true) < 0 ||
-        inputLoopUA(linkLayer, fd, true) < 0)
+    if (inputLoopDISC(linkLayer, fd, true) < 0 || sendDISCMsg(linkLayer, fd, true) < 0)
       failed = 1;
+    if (inputLoopUA(linkLayer, fd, true) < 0)
+      fprintf(stderr, "Didn't receive UA.. Assuming the disconnect was successful!\n");
   } else {
     if (sendDISCMsg(linkLayer, fd, false) < 0 || inputLoopDISC(linkLayer, fd, false) < 0 ||
         sendUAMsg(linkLayer, fd, false) < 0)

@@ -15,6 +15,9 @@
 #define L1 3
 #define MAXSEQNUM 255
 
+#define MYVTIME 1
+#define MYVMIN 0
+
 #include "app_layer.h"
 
 int assembleControlPacket(struct applicationLayer *appLayer, bool is_end,
