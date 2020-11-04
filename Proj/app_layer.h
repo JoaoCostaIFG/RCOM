@@ -27,7 +27,7 @@ int llread(int fd, char **buffer);
 int llclose(int fd, enum applicationStatus appStatus);
 
 long getStartPacketFileSize();
-char* getStartPacketFileName();
+int getStartPacketFileName(char **file_name);
 
 int sendFile(struct applicationLayer * appLayer);
 int receiveFile(struct applicationLayer * appLayer, unsigned char **res);

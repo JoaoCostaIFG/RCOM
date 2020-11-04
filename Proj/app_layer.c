@@ -58,7 +58,7 @@ int llopen(int porta, enum applicationStatus appStatus) {
     leitura do(s) próximo(s) caracter(es)
   */
   newtio.c_cc[VTIME] = MYVTIME; /* inter-unsigned character timer unused */
-  newtio.c_cc[VMIN] = MYVMIN;  /* blocking read until X chars received */
+  newtio.c_cc[VMIN] = MYVMIN;   /* blocking read until X chars received */
   // clear queue
   tcflush(fd, TCIOFLUSH);
 
@@ -128,8 +128,9 @@ long getStartPacketFileSize() {
   return file_size;
 }
 
-char *getStartPacketFileName() {
-  return (char *)(getStartPacket() + 2 + sizeof(long) + 3);
+int getStartPacketFileName(char **file_name) {
+  *file_name = (char *)(getStartPacket() + 2 + sizeof(long) + 3);
+  return (int) *(getStartPacket() + 2 + sizeof(long) + 2);
 }
 
 void drawProgress(float currPerc, int divs, bool isRedraw) {
@@ -308,7 +309,9 @@ void write_file(struct applicationLayer *appLayer,
     stpcpy(out_file, appLayer->file_name);
   } else {
     strcpy(out_file, "out/");
-    strcat(out_file, getStartPacketFileName());
+    char *file_name;
+    int file_name_size = getStartPacketFileName(&file_name);
+    strncat(out_file, file_name, file_name_size);
   }
 
   FILE *fp = fopen(out_file, "w+b");
