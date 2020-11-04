@@ -276,7 +276,6 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
 
     if (n < 0) {
       perror("Morreu mesmo");
-      free(res);
       return -1;
     } else if (n == 0) {
       stop = false;

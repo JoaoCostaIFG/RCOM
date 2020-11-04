@@ -497,7 +497,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
 
   while (curr_state != STOP_ST) {
     int res = read(fd, &currByte, sizeof(unsigned char));
-    if (res <= 0) {
+    if (res < 0) {
       perror("getFrame read"); // TODO Log here
       free_vector(buf);
       return -2;
