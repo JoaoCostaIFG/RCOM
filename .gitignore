@@ -5,3 +5,6 @@
 **/CS_SESSION
 rcom_tp1
 **/out/
+**.aux
+**.toc
+**.log
