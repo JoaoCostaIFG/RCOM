@@ -54,17 +54,121 @@ componente privada que integra as funções internas da camada.
 
 A API da camada de aplicação é implementada nos ficheiros \textit{app\_layer.h}
 e \textit{app\_layer.c}. Para utilizar esta camada é necessário instanciar um objeto
-\textbf{struct applicationLayer}. 
-
+\textbf{struct applicationLayer}.
 
 \begin{lstlisting}
-for (int i=0; i<iterations;i++)
-{
-do something
-}
+struct applicationLayer {
+  int fd; /* file descriptor correspondente a porta serie */
+  enum applicationStatus status; /* TRANSMITTER or RECEIVER */
+  char file_name[256];           /* name of file to transmit (if any) */
+  long file_size;                /* size of file to transmit (if any) */
+  long chunksize;                /* tansmission chunksize */
+};
+\end{lstlisting}
+
+A função \textbf{initAppLayer} inicia um objeto do tipo \textbf{struct applicationLayer}
+e a sua correspondente \textbf{struct linkLayer}.
+\begin{lstlisting}
+void initAppLayer(struct applicationLayer *appLayer, int baudrate,
+                  long chunksize);
+\end{lstlisting}
+
+A função \textbf{llopen} abre uma conexão na dada \textit{serial port}.
+\begin{lstlisting}
+int llopen(int porta, enum applicationStatus appStatus);
+\end{lstlisting}
+
+A função \textbf{llwrite} envia o dado \textit{buffer} através da ligação pré estabelicida.
+\begin{lstlisting}
+int llwrite(int fd, char *buffer, int length);
+\end{lstlisting}
+
+A função \textbf{llread} recebe um pacote da ligação pré-estabelecida para \textit{buffer}.
+\begin{lstlisting}
+int llread(int fd, char **buffer);
+\end{lstlisting}
+
+A função \textbf{llclose} fecha uma ligação anteriormente estabelecida.
+\begin{lstlisting}
+int llclose(int fd, enum applicationStatus appStatus);
+\end{lstlisting}
+
+A função \textbf{sendFile} lê e envia o ficheiro especificado pela camada de aplicação.
+\begin{lstlisting}
+int sendFile(struct applicationLayer *appLayer);
+\end{lstlisting}
+
+A função \textbf{sendFile} recebe o conteúdo de um ficheiro transmitido à camada de aplicação,
+guardando-o em \textit{res}.
+\begin{lstlisting}
+int receiveFile(struct applicationLayer *appLayer, unsigned char **res);
+\end{lstlisting}
+
+A função \textbf{write\_file} cria um ficheiro com o conteúdo de \textit{file\_content}
+e com nome especificado pela camada de aplicação.
+\begin{lstlisting}
+void write_file(struct applicationLayer *appLayer, unsigned char *file_content);
+\end{lstlisting}
+
+\section{Camada de ligação}
+
+A API da camada de ligação é definida nos ficheiros \textit{data\_link.h} e
+\textit{data\_link.c}. Para utilizar esta camada é necessário instanciar um objeto
+do tipo \textbf{struct linkLayer}.
+
+\begin{lstlisting}
+struct linkLayer {
+  char port[20];                 /* Dispositivo /dev/ttySx, x = 0, 1 */
+  int baudRate;                  /* Velcidade de transmissao */
+  unsigned int sequenceNumber;   /* Numero de sequencia da trama: 0, 1*/
+  unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
+  unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
+  vector *frame;
+};
+\end{lstlisting}
+
+A função \textbf{initLinkLayer} inicializa uma camada de ligação e o seu respetivo \textbf{vector}.
+\begin{lstlisting}
+struct linkLayer initLinkLayer();
+\end{lstlisting}
+
+A função \textbf{initConnection} estabelece uma conexão do tipo indicado em \textit{isReceiver}
+na camada de ligação dada.
+\begin{lstlisting}
+int initConnection(struct linkLayer *linkLayer, int fd, bool isReceiver);
+\end{lstlisting}
+
+A função \textbf{endConnection} fecha uma conexão do tipo indicado em \textit{isReceiver}
+na camada de ligação dada.
+\begin{lstlisting}
+int endConnection(struct linkLayer *linkLayer, int fd, bool isReceiver);
+\end{lstlisting}
+
+A função \textbf{getFrame} recebe uma trama através de uma conexão pré-estabelecida.
+\begin{lstlisting}
+int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **packet);
+\end{lstlisting}
+
+A função \textbf{getFrame} envia uma trama para uma conexão pré-estabelecida com o tamanho
+\textit{len}.
+\begin{lstlisting}
+int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
+              int len);
 \end{lstlisting}
 
 {\let\clearpage\relax \chapter{Casos de usos principais}}
+
+A nossa solução para a proposta de trabalho contempla dois casos de uso: o envio de um ficheiro
+como emissor e a receção do mesmo como recetor. Este modo de funcionamento deve ser referido
+na chamada do programa através da flag \textit{-s RECEIVER} ou \textit{-s TRANSMITTER}.
+
+Para o programa ser executado como recetor é obrigatório especificar o número da porta série a usar.
+
+
+
+Se o programa for executado como emissor, será necessário especificar o caminho para o ficheiro a enviar,
+em adição aos outros argumentos já enunciados anteriormente. Enquanto emissor, também pode ser útil referir
+o \textit{chunksize} a usar.
 
 \chapter{Protocolos}
 

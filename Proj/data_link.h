@@ -17,8 +17,6 @@ struct linkLayer {
   unsigned int sequenceNumber;   /* Numero de sequencia da trama: 0, 1*/
   unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
   unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
-  // int frameSize;                 [> Tamanho (em bytes) da trama atual <]
-  // unsigned char frame[MAX_SIZE]; [> Trama <]
   vector *frame;
 };
 
