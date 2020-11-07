@@ -10,13 +10,14 @@ enum applicationStatus { TRANSMITTER, RECEIVER, NONE };
 
 struct applicationLayer {
   int fd; /* file descriptor correspondente a porta serie */
-  enum applicationStatus status;
-  char file_name[256];
-  long file_size;
-  long chunksize;
+  enum applicationStatus status; /* TRANSMITTER or RECEIVER */
+  char file_name[256];           /* name of file to transmit (if any) */
+  long file_size;                /* size of file to transmit (if any) */
+  long chunksize;                /* tansmission chunksize */
 };
 
-void initAppLayer(struct applicationLayer *appLayer, int baudrate, long chunksize);
+void initAppLayer(struct applicationLayer *appLayer, int baudrate,
+                  long chunksize);
 
 int llopen(int porta, enum applicationStatus appStatus);
 
@@ -29,8 +30,8 @@ int llclose(int fd, enum applicationStatus appStatus);
 long getStartPacketFileSize();
 int getStartPacketFileName(char **file_name);
 
-int sendFile(struct applicationLayer * appLayer);
-int receiveFile(struct applicationLayer * appLayer, unsigned char **res);
-void write_file(struct applicationLayer * appLayer, unsigned char *file_content);
+int sendFile(struct applicationLayer *appLayer);
+int receiveFile(struct applicationLayer *appLayer, unsigned char **res);
+void write_file(struct applicationLayer *appLayer, unsigned char *file_content);
 
 #endif // APPLAYER_H
