@@ -509,8 +509,8 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
     if (curr_state == START_ST) {
       buf->end = 0;
     } else if (curr_state == FLAG_ST) {
-      if (buf->end > 1)
-        buf->end = 1;
+      if (buf->end > 0)
+        buf->end = 0;
       vec_push(buf, currByte);
     } else {
       if (isNextEscape) {
