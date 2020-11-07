@@ -1,0 +1,11 @@
+\contentsline {chapter}{\numberline {1}Sumário}{2}%
+\contentsline {chapter}{\numberline {2}Introdução}{3}%
+\contentsline {chapter}{\numberline {3}Arquitetura}{4}%
+\contentsline {chapter}{\numberline {4}Estrutura do código}{4}%
+\contentsline {chapter}{\numberline {5}Casos de usos principais}{4}%
+\contentsline {chapter}{\numberline {6}Protocolos}{5}%
+\contentsline {section}{\numberline {6.1}Protocolo de ligação lógica}{5}%
+\contentsline {section}{\numberline {6.2}Protocolo de aplicação}{5}%
+\contentsline {chapter}{\numberline {7}Validação}{6}%
+\contentsline {chapter}{\numberline {8}Eficiência do protocolo de ligação de dados}{7}%
+\contentsline {chapter}{\numberline {9}Conclusões}{8}%
