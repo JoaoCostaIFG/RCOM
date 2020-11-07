@@ -2,10 +2,17 @@
 
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset { %
+    language=C,
+    backgroundcolor=\color{black!5}, % set backgroundcolor
+    basicstyle=\footnotesize,% basic font setting
+}
 
 \begin{document}
 
-\title{\huge{\textbf{RCOM TP1}} \\ Turma 3 // TODO grupo \\ RCOM 2020/2021 \\ MIEIC FEUP}
+\title{\huge{\textbf{RCOM TP1}} \\ Turma 3 // Grupo 3 \\ RCOM 2020/2021 \\ MIEIC FEUP}
 \author{João de Jesus Costa \\ \texttt{up201806560} \and
 	João Lucas Silva Martins \\ \texttt{up201806436}}
 \date{\today{}}
@@ -29,12 +36,33 @@ linguagem C, que permitisse o envio de ficheiros, entre dois computadores,
 através de uma \textit{serial port}.
 
 Além disso, esta aplicação devia estar organizada em camadas independentes
-(discutidas mais à frente) e ser resistente a ruído e desconexão durante
+(discutidas mais à frente) e deve ser resistente a ruído e desconexão durante
 o envio de informação.
+
+// TODO Dizer o q cada chapter tem
 
 \chapter{Arquitetura}
 
+O código encontra-se dividido em duas partes principais: a camada de aplicação e
+a camada de ligação de dados. Por sua vez, estas duas camadas dividem-se na sua
+componente pública, que é utilizada por um agente externo (\textbf{interface}), e a sua
+componente privada que integra as funções internas da camada.
+
 {\let\clearpage\relax \chapter{Estrutura do código}}
+
+\section{Camada de aplicação}
+
+A API da camada de aplicação é implementada nos ficheiros \textit{app\_layer.h}
+e \textit{app\_layer.c}. Para utilizar esta camada é necessário instanciar um objeto
+\textbf{struct applicationLayer}. 
+
+
+\begin{lstlisting}
+for (int i=0; i<iterations;i++)
+{
+do something
+}
+\end{lstlisting}
 
 {\let\clearpage\relax \chapter{Casos de usos principais}}
 
