@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #define BAUDRATE B38400
@@ -70,21 +71,14 @@ int main(int argc, char **argv) {
   printf("New termios structure set\n");
 
   // send string
-  fgets(buf, 255, stdin);
-  buf[strlen(buf) - 1] = '\0';
+  /*fgets(buf, 255, stdin);*/
+  /*buf[strlen(buf) - 1] = '\0';*/
+  buf[0] = '\0';
+  struct timespec now;
   res = write(fd, buf, strlen(buf) + 1);
+  clock_gettime(CLOCK_REALTIME, &now);
+  printf("TIME: %ld_%ld\n", now.tv_sec, now.tv_nsec);
   printf("\t%d bytes written\n", res);
-
-  // read string
-  res = 0;
-  while (STOP == FALSE) { // input loop
-    res += read(fd, buf + res, 255); /* returns after VMIN chars have been input */
-    printf("t:%s:%d\n", buf, res);
-
-    if (buf[res - 1] == '\0')
-      STOP = TRUE;
-  }
-  printf("\tGot string:%s\n", buf);
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {

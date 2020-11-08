@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #define BAUDRATE B38400
@@ -70,8 +71,12 @@ int main(int argc, char **argv) {
 
   // read string
   res = 0;
+  struct timespec now;
   while (STOP == FALSE) { // input loop
-    res += read(fd, buf + res, 255); /* returns after VMIN chars have been input */
+    res +=
+        read(fd, buf + res, 255); /* returns after VMIN chars have been input */
+    clock_gettime(CLOCK_REALTIME, &now);
+    printf("TIME: %ld_%ld\n", now.tv_sec, now.tv_nsec);
     printf("\t:%s:%d\n", buf, res);
 
     /*
@@ -89,10 +94,6 @@ int main(int argc, char **argv) {
       STOP = TRUE;
   }
   printf("\tGot string:%s\n", buf);
-
-  // send read string
-  res = write(fd, buf, strlen(buf) + 1);
-  printf("\t%d bytes written\n", res);
 
   sleep(1); // for safety (in case the transference is still on-going)
   if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {

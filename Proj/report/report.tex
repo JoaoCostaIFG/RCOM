@@ -207,6 +207,28 @@ de situações de erro e saber o que fazer com a informação recebida.
 
 \chapter{Eficiência do protocolo de ligação de dados}
 
+Com o objetivo de medir de forma fiável a eficiência do protocolo, foi calculado
+o tempo de propagação $T_{prop}$ através da fórmula
+$T_{prop} = T_{absRecebido} - T_{absEnviado}$. Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo
+absoluto de envio do byte de teste, e o tempo de receção do byte de teste, respetivamente.
+
+\begin{table}[h!]
+  \begin{center}
+    \caption{Cálculo do tempo de propagação médio}
+    \label{tab:table1}
+    \begin{tabular}{l|c|r|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        \textbf{$T_{absEnviado}(ns)$} &\textbf{$T_{absRecebido}(ns)$} & \textbf{$T_{prop}(ns)$} & \textbf{$\mu T_{prop}$}\\
+      \hline
+      267368335 & 264536179 & 2832156\\
+      469990377 & 467159729 & 2830648\\
+        672241506 & 669431417 & 2810089 & 2819355\\
+      874435168 & 871625091 & 2810077\\
+      77204397 & 74385042 & 2819355\\
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
 \chapter{Conclusões}
 
 \end{document}
