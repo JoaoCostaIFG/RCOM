@@ -606,8 +606,10 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
               int len) {
   // send info fragment
   assembleInfoFrame(linkLayer, packet, len);
+#ifdef INTROERR
   fillByteField(linkLayer->frame->data, BCC_FIELD,
                 linkLayer->frame->data[BCC_FIELD] + (rand() % 2));
+#endif
   sendAndAlarmReset(linkLayer, fd);
 
   // Get RR/REJ answer
@@ -619,8 +621,10 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
     state curr_state = START_ST;
     transitions transition;
 
+#ifdef INTROERR
     fillByteField(linkLayer->frame->data, BCC_FIELD,
                   linkLayer->frame->data[BCC_FIELD] + (rand() % 2));
+#endif
     while (curr_state != STOP_ST) {
       res = read(fd, &currByte, sizeof(unsigned char));
       if (res == 0) {
