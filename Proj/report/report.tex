@@ -184,6 +184,23 @@ se um dada de trama de informação foi bem (ou mal) recebida. As tramas
 não numeradas servem para implementar os mecanismos de inicio e conclusão
 de uma conexão.
 
+O cabeçalho de cada trama é protegida um BCC. As tramas de informação têm um
+segundo BCC que protege a informação transmitida.
+// TODO code snipet do BCC2
+
+// TODO falar bit sequência
+
+De modo a garantir que o byte correspondente à \textit{flag} (byte que indica
+o inicio e o final de um trama) não ocorre no campo de informação ou no BCC,
+é realizado o byte \textit{stuffing} (e consequentemente \textit{destuffing})
+destas.
+// TODO code snippet stuffing
+
+Este protocolo faz uso de uma máquina de estados de modo a conseguir recuperar
+de situações de erro e saber o que fazer com a informação recebida.
+// TODO snippet state machine e enums dela
+
+
 \section{Protocolo de aplicação}
 
 \chapter{Validação}
