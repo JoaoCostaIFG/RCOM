@@ -285,7 +285,7 @@ transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
 transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
                               state curr_state) {
   transitions transition;
-  if (curr_state == CI_ST && byte == calcBCCField(buf)) {
+  if (curr_state == CI_ST) { // && byte == calcBCCField(buf)) {
     // TODO mandar REJ?
     transition = BCC_RCV;
   } else {
@@ -489,7 +489,7 @@ int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, REJ_MSG);
 
   ++linkLayer->stats.sent;
-  ++linkLayer->stats.RRs;
+  ++linkLayer->stats.REJs;
 
   // send msg
   int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
@@ -551,7 +551,11 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
   ++linkLayer->stats.received;
 
   bool isOk = true;
-  if (!checkBCC2Field(buf->data + 4, buf->end - 6)) {
+  if (!checkBCCField(buf->data)) {
+    // BCC is not ok -> REJ
+    fprintf(stderr, "BCC is not OK!");
+    isOk = false;
+  } else if (!checkBCC2Field(buf->data + 4, buf->end - 6)) {
     // BCC2 is not ok -> REJ
     fprintf(stderr, "BCC2 is not OK!");
     isOk = false;
@@ -602,6 +606,8 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
               int len) {
   // send info fragment
   assembleInfoFrame(linkLayer, packet, len);
+  fillByteField(linkLayer->frame->data, BCC_FIELD,
+                linkLayer->frame->data[BCC_FIELD] + (rand() % 2));
   sendAndAlarmReset(linkLayer, fd);
 
   // Get RR/REJ answer
@@ -613,6 +619,8 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
     state curr_state = START_ST;
     transitions transition;
 
+    fillByteField(linkLayer->frame->data, BCC_FIELD,
+                  linkLayer->frame->data[BCC_FIELD] + (rand() % 2));
     while (curr_state != STOP_ST) {
       res = read(fd, &currByte, sizeof(unsigned char));
       if (res == 0) {
