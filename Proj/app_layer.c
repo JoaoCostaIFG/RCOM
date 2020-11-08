@@ -330,8 +330,6 @@ void write_file(struct applicationLayer *appLayer,
 
 void printConnectionStats(enum applicationStatus status) {
   struct linkStats *stats = &linkLayer.stats;
-  printf("%d %d %d %d %d\n", stats->sent, stats->resent, stats->received,
-         stats->RRs, stats->REJs);
 
   printf("\n==========================\n= Connection statistics "
          "=\n==========================");
