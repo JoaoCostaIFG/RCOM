@@ -331,8 +331,8 @@ void write_file(struct applicationLayer *appLayer,
 void printConnectionStats(enum applicationStatus status) {
   struct linkStats *stats = &linkLayer.stats;
 
-  printf("\n==========================\n= Connection statistics "
-         "=\n==========================");
+  puts("\n==========================\n= Connection statistics "
+       "=\n==========================");
   printf("= Number of frames sent: %d\n", stats->sent);
   printf("= Number of frames re-sent: %d\n", stats->resent);
   printf("= Number of frames received: %d\n", stats->received);
@@ -341,7 +341,9 @@ void printConnectionStats(enum applicationStatus status) {
     printf("= Number of REJs sent: %d\n", stats->REJs);
   }
 
-  printf("=\n= Connection duration: %lds && %.2fms\n",
-         stats->end_time.tv_sec - stats->start_time.tv_sec,
-         (stats->end_time.tv_nsec - stats->start_time.tv_nsec) / 1000000.0);
+  double result =
+      stats->end_time.tv_sec - stats->start_time.tv_sec +
+      ((stats->end_time.tv_nsec - stats->start_time.tv_nsec) / 1000000000.0);
+  printf("=\n= Connection duration: %.5lfs\n", result);
+  puts("==========================");
 }
