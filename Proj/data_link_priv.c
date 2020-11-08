@@ -30,12 +30,28 @@ int resendHandler(struct linkLayer *linkLayer, int fd) {
     return -2;
   }
 
+  ++linkLayer->stats.resent;
   if (sendAndAlarm(linkLayer, fd) < 0) {
     perror("Failed re-sending last message");
     return -3;
   }
 
   return 0;
+}
+
+/* WRITE FUNCTIONS */
+int sendAndAlarm(struct linkLayer *linkLayer, int fd) {
+  ++linkLayer->stats.sent;
+  int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
+  // set alarm
+  alarm(linkLayer->timeout);
+  return res;
+}
+
+int sendAndAlarmReset(struct linkLayer *linkLayer, int fd) {
+  // reset attempts
+  linkLayer->numTransmissions = MAXATTEMPTS;
+  return sendAndAlarm(linkLayer, fd);
 }
 
 /* BASICS */
@@ -47,6 +63,13 @@ struct linkLayer initLinkLayer() {
   linkLayer.numTransmissions = MAXATTEMPTS;
   linkLayer.frame = new_vector();
   vec_reserve(linkLayer.frame, MAX_SIZE);
+
+  struct linkStats *stats = &linkLayer.stats;
+  stats->sent = 0;
+  stats->resent = 0;
+  stats->received = 0;
+  stats->RRs = 0;
+  stats->REJs = 0;
 
   /* Set alarm signal handler */
   struct sigaction sa;
@@ -105,8 +128,6 @@ int stuffByte(unsigned char byte, unsigned char res[]) {
   return bytes_returned;
 }
 
-unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
-
 int stuffString(unsigned char *str, unsigned char *res, int size) {
   int j = 0;
   for (int i = 0; i < size; ++i) {
@@ -118,6 +139,8 @@ int stuffString(unsigned char *str, unsigned char *res, int size) {
   }
   return j;
 }
+
+unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
 
 /* PACKET ASSEMBLY */
 void assembleSUFrame(struct linkLayer *linkLayer,
@@ -196,20 +219,6 @@ int assembleInfoFrame(struct linkLayer *linkLayer, unsigned char *buf,
 
   linkLayer->frame->end = new_size + i + 1;
   return new_size + i;
-}
-
-/* WRITE FUNCTIONS */
-int sendAndAlarm(struct linkLayer *linkLayer, int fd) {
-  int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
-  // set alarm
-  alarm(linkLayer->timeout);
-  return res;
-}
-
-int sendAndAlarmReset(struct linkLayer *linkLayer, int fd) {
-  // reset attempts
-  linkLayer->numTransmissions = MAXATTEMPTS;
-  return sendAndAlarm(linkLayer, fd);
 }
 
 /* STATE MACHINE */
@@ -392,6 +401,8 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
     }
   }
 
+  ++linkLayer->stats.received;
+
   return 0;
 }
 
@@ -401,6 +412,7 @@ int sendUAMsg(struct linkLayer *linkLayer, int fd, bool isRecv) {
 
   // send msg
   int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
+  ++linkLayer->stats.sent;
   if (res < 0) {
     perror("Failed sending UA");
     return -1;
@@ -438,6 +450,8 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd, bool isRecv) {
     }
   }
 
+  ++linkLayer->stats.received;
+
   alarm(0); // cancel pending alarm
   return 0;
 }
@@ -458,6 +472,9 @@ int sendSetMsg(struct linkLayer *linkLayer, int fd) {
 int sendRRMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, RR_MSG);
 
+  ++linkLayer->stats.sent;
+  ++linkLayer->stats.RRs;
+
   // send msg
   int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
   if (res < 0) {
@@ -470,6 +487,9 @@ int sendRRMsg(struct linkLayer *linkLayer, int fd) {
 
 int sendREJMsg(struct linkLayer *linkLayer, int fd) {
   assembleSUFrame(linkLayer, REJ_MSG);
+
+  ++linkLayer->stats.sent;
+  ++linkLayer->stats.RRs;
 
   // send msg
   int res = write(fd, linkLayer->frame->data, linkLayer->frame->end);
@@ -527,6 +547,8 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
       }
     }
   }
+
+  ++linkLayer->stats.received;
 
   bool isOk = true;
   if (!checkBCC2Field(buf->data + 4, buf->end - 6)) {
@@ -613,6 +635,8 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
       }
     }
 
+    ++linkLayer->stats.received;
+
     // check the received answer
     if (buf[C_FIELD] == (C_RR | (nextSeqNum << 7))) {
       // RR
@@ -622,11 +646,13 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
     } else if (buf[C_FIELD] == (C_RR | (linkLayer->sequenceNumber << 7))) {
       // RR repeated
       // do not flip sequenceNumber
+      ++linkLayer->stats.resent;
       sendAndAlarmReset(linkLayer, fd);
     } else if (buf[C_FIELD] == (C_REJ | (linkLayer->sequenceNumber << 7))) {
       // REJ
       // sequence number isn't flipped
       // reset attempts (we got an answer) and resend
+      ++linkLayer->stats.resent;
       sendAndAlarmReset(linkLayer, fd);
     }
   }
@@ -674,6 +700,8 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv) {
         bufLen = 1;
     }
   }
+
+  ++linkLayer->stats.received;
 
   alarm(0); // cancel pending alarm
   return 0;

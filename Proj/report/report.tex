@@ -193,16 +193,89 @@ De modo a garantir que o byte correspondente à \textit{flag} (byte que indica
 o inicio e o final de um trama) não ocorre no campo de informação ou no BCC,
 é realizado o byte \textit{stuffing} (e consequentemente \textit{destuffing})
 destas.
-// TODO code snippet stuffing
+\begin{lstlisting}
+int stuffByte(unsigned char byte, unsigned char res[]) {
+  int bytes_returned = 1;
+  if (byte == ESC) {
+    res[0] = ESC;
+    res[1] = ESC ^ STUFF_BYTE;
+    bytes_returned = 2;
+  } else if (byte == FLAG) {
+    res[0] = ESC;
+    res[1] = FLAG ^ STUFF_BYTE;
+    bytes_returned = 2;
+  } else
+    res[0] = byte;
+  return bytes_returned;
+}
+
+int stuffString(unsigned char *str, unsigned char *res, int size) {
+  int j = 0;
+  for (int i = 0; i < size; ++i) {
+    unsigned char stuffedBytes[2];
+    int n = stuffByte(str[i], stuffedBytes);
+    res[j++] = stuffedBytes[0];
+    if (n > 1)
+      res[j++] = stuffedBytes[1];
+  }
+  return j;
+}
+
+unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
+\end{lstlisting}
 
 O cabeçalho de cada trama é protegido por um BCC. As tramas de informação têm um
 segundo BCC que protege a informação transmitida.
-// TODO code snipet do BCC2
+\begin{lstlisting}
+unsigned char calcBCC2Field(unsigned char *buf, int size) {
+  unsigned char ret = 0;
+  for (int i = 0; i < size; ++i)
+    ret ^= buf[i];
+  return ret;
+}
+
+bool checkBCC2Field(unsigned char *buf, int size) {
+  return calcBCC2Field(buf, size) == buf[size];
+}
+\end{lstlisting}
 
 Este protocolo faz uso de uma máquina de estados de modo a conseguir interpretar
 os bytes recebidos. Esta interpretação facilita o \textit{byte destuffing}, a
 recuperação de erros e a identificação do final de tramas.
-// TODO snippet state machine e enums dela
+\begin{lstlisting}
+/* STATE MACHINE */
+typedef enum {
+  FLAG_RCV = 0,
+  A_RCV = 1,
+  CI_RCV = 2,
+  CS_RCV = 3,
+  BCC_RCV = 4,
+  OTHER_RCV = 5
+} transitions;
+
+typedef enum {
+  START_ST = 0,
+  FLAG_ST = 1,
+  A_ST = 2,
+  CS_ST = 3,
+  BCC_ST = 4,
+  CI_ST = 5,
+  D_ST = 6,
+  STOP_ST = 7
+} state;
+
+static state state_machine[][6] = {
+/*  F_RCV     A_RCV     CI_RCV    CS_RCV    BCC_RCV   OTHER_RCV */
+  { FLAG_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // START_ST
+  { FLAG_ST,  A_ST,     START_ST, START_ST, START_ST, START_ST},  // FLAG_ST
+  { FLAG_ST,  START_ST, CI_ST,    CS_ST,    START_ST, START_ST},  // A_ST
+  { FLAG_ST,  START_ST, START_ST, START_ST, BCC_ST,   START_ST},  // CS_ST
+  { STOP_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // BCC_ST
+  { FLAG_ST,  START_ST, START_ST, START_ST, D_ST,     START_ST},  // CI_ST
+  { STOP_ST,  D_ST,     D_ST,     D_ST,     D_ST,     D_ST    },  // D_ST
+  { STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST }   // STOP_ST
+};
+\end{lstlisting}
 
 \section{Protocolo de aplicação}
 
@@ -229,7 +302,13 @@ Estes pacotes contém informação relativa ao nome do ficheiro e o seu tamanho 
 um byte identificador. Estes dois pacotes devem ser idênticos, à excepção do byte
 identificador (um sinalizará o inicio e o outro o fim da transmissão).
 
-\chapter{Validação}
+{\let\clearpage\relax \chapter{Validação}}
+
+De modo a validar o correto funcionamento do programa, enviamos diversos ficheiros
+com tamanhos e formatos distintos, fazendo variar o valor do \textit{baudrate}
+e do \textit{chunksize}.
+
+// TODO mostrar tempos
 
 \chapter{Eficiência do protocolo de ligação de dados}
 

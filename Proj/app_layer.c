@@ -16,7 +16,7 @@ static struct termios oldtio;
 
 void initAppLayer(struct applicationLayer *appLayer, int baudrate,
                   long chunksize) {
-  linkLayer = initLinkLayer(); // TODO check error
+  linkLayer = initLinkLayer(); // TODO check errors
 
   appLayer->chunksize = chunksize;
   if (setBaudRate(&linkLayer, baudrate) < 0)
@@ -130,7 +130,7 @@ long getStartPacketFileSize() {
 
 int getStartPacketFileName(char **file_name) {
   *file_name = (char *)(getStartPacket() + 2 + sizeof(long) + 3);
-  return (int) *(getStartPacket() + 2 + sizeof(long) + 2);
+  return (int)*(getStartPacket() + 2 + sizeof(long) + 2);
 }
 
 void drawProgress(float currPerc, int divs, bool isRedraw) {
@@ -326,4 +326,24 @@ void write_file(struct applicationLayer *appLayer,
     }
     fclose(fp);
   }
+}
+
+void printConnectionStats(enum applicationStatus status) {
+  struct linkStats *stats = &linkLayer.stats;
+  printf("%d %d %d %d %d\n", stats->sent, stats->resent, stats->received,
+         stats->RRs, stats->REJs);
+
+  printf("\n==========================\n= Connection statistics "
+         "=\n==========================");
+  printf("= Number of frames sent: %d\n", stats->sent);
+  printf("= Number of frames re-sent: %d\n", stats->resent);
+  printf("= Number of frames received: %d\n", stats->received);
+  if (status == RECEIVER) {
+    printf("= Number of RRs sent: %d\n", stats->RRs);
+    printf("= Number of REJs sent: %d\n", stats->REJs);
+  }
+
+  printf("=\n= Connection duration: %lds && %.2fms\n",
+         stats->end_time.tv_sec - stats->start_time.tv_sec,
+         (stats->end_time.tv_nsec - stats->start_time.tv_nsec) / 1000000.0);
 }
