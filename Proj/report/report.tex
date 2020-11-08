@@ -1,4 +1,6 @@
-\documentclass{report}
+\documentclass[11pt]{report}
+
+\usepackage[margin=0.5in]{geometry}
 
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{float}
@@ -29,7 +31,7 @@
 \chapter{Sumário}
 // TODO
 
-\chapter{Introdução}
+{\let\clearpage\relax \chapter{Introdução}}
 Este relatório incide sobre o projecto desenvolvido para a unidade curricular
 de RCOM. Neste projecto foi pedido o desenvolvimento de uma aplicação, em
 linguagem C, que permitisse o envio de ficheiros, entre dois computadores,
@@ -41,7 +43,7 @@ o envio de informação.
 
 // TODO Dizer o q cada chapter tem
 
-\chapter{Arquitetura}
+{\let\clearpage\relax \chapter{Arquitetura}}
 
 O código encontra-se dividido em duas partes principais: a camada de aplicação e
 a camada de ligação de dados. Por sua vez, estas duas camadas dividem-se na sua
@@ -58,11 +60,11 @@ e \textit{app\_layer.c}. Para utilizar esta camada é necessário instanciar um 
 
 \begin{lstlisting}
 struct applicationLayer {
-  int fd; /* file descriptor correspondente a porta serie */
-  enum applicationStatus status; /* TRANSMITTER or RECEIVER */
-  char file_name[256];           /* name of file to transmit (if any) */
-  long file_size;                /* size of file to transmit (if any) */
-  long chunksize;                /* tansmission chunksize */
+  int fd;  /* file descriptor correspondente a porta serie */
+  enum applicationStatus status;  /* TRANSMITTER or RECEIVER */
+  char file_name[256];  /* name of file to transmit (if any) */
+  long file_size;       /* size of file to transmit (if any) */
+  long chunksize;       /* tansmission chunksize */
 };
 \end{lstlisting}
 
@@ -177,33 +179,136 @@ o \textit{chunksize} a usar.
 Este protocolo e responsável pela preparação da informação a enviar pela
 \textit{serial port} e os mecanismos de recuperação de erros/falhas.
 
-Este protocolo transmite informação através do uso de tramas. Existem três
-tipos de tramas: informação, supervisão, e não numeradas. As tramas de
-informação carregam os dados a enviar. As tramas de supervisão indicam
-se um dada de trama de informação foi bem (ou mal) recebida. As tramas
-não numeradas servem para implementar os mecanismos de inicio e conclusão
-de uma conexão.
+A informação é transmitida em tramas. Existem três tipos de tramas:
+\textbf{informação, supervisão, e não numeradas}. As tramas de informação
+carregam os dados a enviar. As tramas de supervisão indicam se um dada de
+trama de informação foi bem (ou mal) recebida. As tramas não numeradas servem
+para implementar os mecanismos de inicio e conclusão de uma conexão.
 
-O cabeçalho de cada trama é protegida um BCC. As tramas de informação têm um
-segundo BCC que protege a informação transmitida.
-// TODO code snipet do BCC2
-
-// TODO falar bit sequência
+As tramas começam e terminam por um byte de \textit{flag} (0x7E) e são
+identificadas por um bit de sequência que oscila entre 0 e 1. Este bit é útil
+para que o protocolo consiga garantir que nenhuma trama foi perdida ou repetida.
 
 De modo a garantir que o byte correspondente à \textit{flag} (byte que indica
 o inicio e o final de um trama) não ocorre no campo de informação ou no BCC,
 é realizado o byte \textit{stuffing} (e consequentemente \textit{destuffing})
 destas.
-// TODO code snippet stuffing
+\begin{lstlisting}
+int stuffByte(unsigned char byte, unsigned char res[]) {
+  int bytes_returned = 1;
+  if (byte == ESC) {
+    res[0] = ESC;
+    res[1] = ESC ^ STUFF_BYTE;
+    bytes_returned = 2;
+  } else if (byte == FLAG) {
+    res[0] = ESC;
+    res[1] = FLAG ^ STUFF_BYTE;
+    bytes_returned = 2;
+  } else
+    res[0] = byte;
+  return bytes_returned;
+}
 
-Este protocolo faz uso de uma máquina de estados de modo a conseguir recuperar
-de situações de erro e saber o que fazer com a informação recebida.
-// TODO snippet state machine e enums dela
+int stuffString(unsigned char *str, unsigned char *res, int size) {
+  int j = 0;
+  for (int i = 0; i < size; ++i) {
+    unsigned char stuffedBytes[2];
+    int n = stuffByte(str[i], stuffedBytes);
+    res[j++] = stuffedBytes[0];
+    if (n > 1)
+      res[j++] = stuffedBytes[1];
+  }
+  return j;
+}
 
+unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
+\end{lstlisting}
+
+O cabeçalho de cada trama é protegido por um BCC. As tramas de informação têm um
+segundo BCC que protege a informação transmitida.
+\begin{lstlisting}
+unsigned char calcBCC2Field(unsigned char *buf, int size) {
+  unsigned char ret = 0;
+  for (int i = 0; i < size; ++i)
+    ret ^= buf[i];
+  return ret;
+}
+
+bool checkBCC2Field(unsigned char *buf, int size) {
+  return calcBCC2Field(buf, size) == buf[size];
+}
+\end{lstlisting}
+
+Este protocolo faz uso de uma máquina de estados de modo a conseguir interpretar
+os bytes recebidos. Esta interpretação facilita o \textit{byte destuffing}, a
+recuperação de erros e a identificação do final de tramas.
+\begin{lstlisting}
+/* STATE MACHINE */
+typedef enum {
+  FLAG_RCV = 0,
+  A_RCV = 1,
+  CI_RCV = 2,
+  CS_RCV = 3,
+  BCC_RCV = 4,
+  OTHER_RCV = 5
+} transitions;
+
+typedef enum {
+  START_ST = 0,
+  FLAG_ST = 1,
+  A_ST = 2,
+  CS_ST = 3,
+  BCC_ST = 4,
+  CI_ST = 5,
+  D_ST = 6,
+  STOP_ST = 7
+} state;
+
+static state state_machine[][6] = {
+/*  F_RCV     A_RCV     CI_RCV    CS_RCV    BCC_RCV   OTHER_RCV */
+  { FLAG_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // START_ST
+  { FLAG_ST,  A_ST,     START_ST, START_ST, START_ST, START_ST},  // FLAG_ST
+  { FLAG_ST,  START_ST, CI_ST,    CS_ST,    START_ST, START_ST},  // A_ST
+  { FLAG_ST,  START_ST, START_ST, START_ST, BCC_ST,   START_ST},  // CS_ST
+  { STOP_ST,  START_ST, START_ST, START_ST, START_ST, START_ST},  // BCC_ST
+  { FLAG_ST,  START_ST, START_ST, START_ST, D_ST,     START_ST},  // CI_ST
+  { STOP_ST,  D_ST,     D_ST,     D_ST,     D_ST,     D_ST    },  // D_ST
+  { STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST,  STOP_ST }   // STOP_ST
+};
+\end{lstlisting}
 
 \section{Protocolo de aplicação}
 
-\chapter{Validação}
+Este protocolo é responsável por abrir a porta série, ler/escrever o ficheiro
+transferido. Para isso, inicia a camada de ligação de dados, faz a segmentação
+do ficheiro a transmitir, interpreta a informação recebida e escreve a
+informação para o ficheiro resultante.
+
+Os pacotes destes protocolo possuem um cabeçalho que indica o tipo de mensagem
+que contém: controlo (tamanho ficheiro e nome do ficheiro) ou bloco de
+informação. No caso dos pacotes de informação, o cabeçalho contém um byte
+de sequência que indica a ordem dos pacotes, começando em zero. A cada pacote
+recebido este número deve aumentar por um e voltar a zero após o número 255.
+Se esta não for comprida, é evidente que ocorreu um erro grave e que a execução
+deve ser terminada.
+
+No lado do emissor, o ficheiro é lido e, em seguida, enviado em blocos de
+tamanho \textit{chunksize} bytes (valor configurável). No lado do recetor, o
+ficheiro é lido em blocos de tamanho \textit{chunksize} definido pelo emissor.
+Quando a transmissão termina, a informação lida é escrita no ficheiro.
+
+O primeiro e último pacotes transmitidos pelo protocolo são pacotes de controlo.
+Estes pacotes contém informação relativa ao nome do ficheiro e o seu tamanho e
+um byte identificador. Estes dois pacotes devem ser idênticos, à excepção do byte
+identificador (um sinalizará o inicio e o outro o fim da transmissão).
+
+{\let\clearpage\relax \chapter{Validação}}
+
+De modo a validar o correto funcionamento do programa, enviamos diversos ficheiros
+com tamanhos e formatos distintos, fazendo variar o valor do \textit{baudrate}
+e do \textit{chunksize}.
+
+// TODO mostrar tempos
 
 \chapter{Eficiência do protocolo de ligação de dados}
 

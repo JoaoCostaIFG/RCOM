@@ -34,4 +34,6 @@ int sendFile(struct applicationLayer *appLayer);
 int receiveFile(struct applicationLayer *appLayer, unsigned char **res);
 void write_file(struct applicationLayer *appLayer, unsigned char *file_content);
 
+void printConnectionStats(enum applicationStatus status);
+
 #endif // APPLAYER_H

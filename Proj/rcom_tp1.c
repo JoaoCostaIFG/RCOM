@@ -161,5 +161,7 @@ int main(int argc, char **argv) {
     exit(-1);
   }
 
+  printConnectionStats(appLayer.status);
+
   return 0;
 }
