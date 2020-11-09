@@ -607,8 +607,14 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
   // send info fragment
   assembleInfoFrame(linkLayer, packet, len);
 #ifdef INTROERR
+  int div = 5;
+  int r = 0;
+  if ((rand() % div) == 0) {
+	r = 1;
+	fprintf(stderr, "Int Error\n");
+  }
   fillByteField(linkLayer->frame->data, BCC_FIELD,
-                linkLayer->frame->data[BCC_FIELD] + (rand() % 2));
+                linkLayer->frame->data[BCC_FIELD] + r);
 #endif
   sendAndAlarmReset(linkLayer, fd);
 
@@ -622,8 +628,13 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
     transitions transition;
 
 #ifdef INTROERR
-    fillByteField(linkLayer->frame->data, BCC_FIELD,
-                  linkLayer->frame->data[BCC_FIELD] + (rand() % 2));
+  r = 0;
+  if ((rand() % div) == 0) {
+	r = 1;
+	fprintf(stderr, "Int Error\n");
+  }
+  fillByteField(linkLayer->frame->data, BCC_FIELD,
+                linkLayer->frame->data[BCC_FIELD] + r);
 #endif
     while (curr_state != STOP_ST) {
       res = read(fd, &currByte, sizeof(unsigned char));
@@ -664,6 +675,17 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
       // REJ
       // sequence number isn't flipped
       // reset attempts (we got an answer) and resend
+
+#ifdef INTROERR
+  r = -1;
+  if ((rand() % div) == 0) {
+	r = 0;
+	fprintf(stderr, "Int Error\n");
+  }
+  fillByteField(linkLayer->frame->data, BCC_FIELD,
+                linkLayer->frame->data[BCC_FIELD] + r);
+#endif
+
       ++linkLayer->stats.resent;
       sendAndAlarmReset(linkLayer, fd);
     }

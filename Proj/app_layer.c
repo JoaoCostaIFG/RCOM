@@ -138,7 +138,7 @@ void drawProgress(float currPerc, int divs, bool isRedraw) {
   return;
 #endif
   static int prev_full = -1;
-  int full = (int)round(currPerc * divs);
+  int full = (int)(currPerc * divs);
   if (full < 0)
     full = 0;
   else if (full > divs)
