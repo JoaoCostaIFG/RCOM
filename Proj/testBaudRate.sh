@@ -23,9 +23,9 @@ serial1="11"
 baudrates="9600 19200 38400 57600 115200 230400 460800"
 
 for br in $baudrates; do
-  ./rcom_tp1 -s RECEIVER -p "$serial1" -b "$br" 2>&1 &
+  ./rcom_tp1 -s RECEIVER -p "$serial1" -b "$br" 2>&1 > /dev/null &
   p="$!"
   log=$(./rcom_tp1 -s TRANSMITTER -p "$serial0" -b "$br" -f files/gato.gif 2>&1)
   wait "$p"
-  printf "%s" $log
+  echo $log | awk -F'Connection duration: ' '{print $2}' | awk '{print $1}'
 done

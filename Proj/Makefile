@@ -5,7 +5,7 @@ OBJ = ${SRC:.c=.o}
 # compiler and linker
 CC = gcc
 # flags
-CFLAGS = -lm -Wall -Wextra
+CFLAGS = -lm -Wall -Wextra -D HASPROGRESS
 
 all: options rcom
 
