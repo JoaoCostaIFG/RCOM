@@ -290,6 +290,7 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
         stop = true;
       else if (status == C_DATA) {
         memcpy(*res + curr_file_n, buf + 4, n - 4);
+        free(buf);
         curr_file_n += n - 4;
         stop = false;
       } else
@@ -300,7 +301,6 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
 
   drawProgress(1, PROGRESSSIZE, true);
   puts("");
-  free(buf);
   return 0;
 }
 
