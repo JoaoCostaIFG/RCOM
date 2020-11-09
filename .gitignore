@@ -8,5 +8,6 @@ rcom_tp1
 **.aux
 **.toc
 **.log
-report.pdf
-MINIX-LCOM.zip
+**/report.pdf
+**/MINIX-LCOM.zip
+**/transLog
