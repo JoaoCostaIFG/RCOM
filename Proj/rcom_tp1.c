@@ -119,7 +119,6 @@ int main(int argc, char **argv) {
   parseArgs(argc, argv);
   initAppLayer(&appLayer, baudrate, chunksize);
 
-
   if (port < 0) {
     fprintf(stderr, "port is not optional.\n");
     print_usage();
@@ -143,6 +142,11 @@ int main(int argc, char **argv) {
   }
 
   if (appLayer.status == TRANSMITTER) {
+#ifdef INTROERR
+    time_t seed = time(NULL);
+    srand(seed);
+    printf("Using seed %ld\n", seed);
+#endif
     if (sendFile(&appLayer) < 0)
       return -1;
   } else { // RECEIVER

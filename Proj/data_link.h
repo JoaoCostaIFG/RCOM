@@ -13,11 +13,11 @@
 #define MAX_SIZE 256 // in Bytes
 
 struct linkStats {
-  unsigned int sent;      /* total number of sent frames */
-  unsigned int resent;    /* number of resent frames */
-  unsigned int received;  /* total number of received frames */
-  unsigned int RRs;       /* number of RRs sent */
-  unsigned int REJs;      /* number of REJs sent */
+  unsigned int sent;          /* total number of sent frames */
+  unsigned int resent;        /* number of resent frames */
+  unsigned int received;      /* total number of received frames */
+  unsigned int RRs;           /* number of RRs sent */
+  unsigned int REJs;          /* number of REJs sent */
   struct timespec start_time; /* time at which the connection started */
   struct timespec end_time;   /* time at which the connection ended */
 };
