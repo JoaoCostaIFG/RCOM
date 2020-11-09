@@ -134,6 +134,9 @@ int getStartPacketFileName(char **file_name) {
 }
 
 void drawProgress(float currPerc, int divs, bool isRedraw) {
+#ifndef HASPROGRESS
+  return;
+#endif
   static int prev_full = -1;
   int full = (int)round(currPerc * divs);
   if (full < 0)
