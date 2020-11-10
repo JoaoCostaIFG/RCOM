@@ -672,11 +672,8 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
       // reset attempts (we got an answer) and resend
 
 #ifdef INTROERR
-      r = -1;
-      if ((rand() % div) == 0)
-        r = 0;
-      fillByteField(linkLayer->frame->data, BCC_FIELD,
-                    linkLayer->frame->data[BCC_FIELD] + r);
+      // go back on errors
+      setBCCField(linkLayer->frame->data);
 #endif
 
       ++linkLayer->stats.resent;
