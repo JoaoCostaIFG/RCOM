@@ -382,7 +382,6 @@ absoluto de envio do byte de teste, e o tempo de receção do byte de teste, res
   \end{center}
 \end{table}
 
-<<<<<<< HEAD
 \subsection{Análise de eficiência}
 
 De modo a obter resultados mais precisos foram efetuados três medições
@@ -549,6 +548,42 @@ nos computadores laboratoriais da sala I320. Em cada medição foi usado um
         (200 , 3.00061)
         (500 , 6.45144)
         (1000 , 12.271156)
+    };
+\end{axis}
+\end{tikzpicture}
+
+
+O grupo planeava efetuar um maior número de medidas com um FER
+maior, mas tal não foi possível pelo facto da conexão aos computadores
+da FEUP ser muito fraca.
+\begin{tikzpicture}
+\begin{axis}[
+    title={Tempo de execução em função de FER},
+    width=12cm,
+    xlabel={FER [Err/Frame]},
+    ylabel={Tempo de execução [s]},
+    ymin=0, ymax=3,
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+]
+
+\addplot[
+    color=blue,
+    ]
+    coordinates {
+        (0.11111 , 1.16461)
+        (0.14286 , 1.19231)
+        (0.15789 , 1.23536)
+        (0.18644 , 1.28378)
+        (0.21311 , 1.30724)
+        (0.22581 , 1.33135)
+        (0.27273 , 1.44835)
+        (0.28358 , 1.44912)
+        (0.30435 , 1.49755)
+        (0.34247 , 1.59548)
+        (0.48387 , 2.04525)
+        (0.48936 , 2.04511)
     };
 \end{axis}
 \end{tikzpicture}
