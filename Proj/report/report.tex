@@ -6,6 +6,7 @@
 \usepackage{float}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{pgfplots}
 \lstset {
     language=C,
     backgroundcolor=\color{black!12}, % set backgroundcolor
@@ -358,10 +359,12 @@ resultaram na transferência do ficheiro escolhido na sua integra de forma corre
 
 \chapter{Eficiência do protocolo de ligação de dados}
 
-Com o objectivo de medir de forma fiável a eficiência do protocolo, foi calculado
-o tempo de propagação $T_{prop}$ através da fórmula $T_{prop} = T_{absRecebido} -
-T_{absEnviado}$. Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo absoluto de
-envio do byte de teste, e o tempo de recessão do byte de teste, respectivamente.
+\subsection{Tempo de propagação}
+
+Com o objetivo de medir de forma fiável a eficiência do protocolo, foi calculado
+o tempo de propagação $T_{prop}$ através da fórmula
+$T_{prop} = T_{absRecebido} - T_{absEnviado}$. Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo
+absoluto de envio do byte de teste, e o tempo de receção do byte de teste, respetivamente.
 
 \begin{table}[h!]
   \begin{center}
@@ -378,6 +381,177 @@ envio do byte de teste, e o tempo de recessão do byte de teste, respectivamente
     \end{tabular}
   \end{center}
 \end{table}
+
+<<<<<<< HEAD
+\subsection{Análise de eficiência}
+
+De modo a obter resultados mais precisos foram efetuados três medições
+para cada cálculo do tempo de execução. As medições foram feitas remotamente
+nos computadores laboratoriais da sala I320. Em cada medição foi usado um
+\textit{chunksize} de 256 Bytes e o ficheiro usado foi o fornecido pelo moodle (pinguim.gif).
+\begin{table}[h!]
+  \begin{center}
+    \caption{Cálculo da eficiência sem introdução de erros}
+    \label{tab:table1}
+    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Baudrate & \textbf{$  T_{execucao} (s) $} \\
+      \hline
+        9600 & 12.23109\\
+        19200 & 6.11795\\
+        38400 & 3.06131\\
+        57600 & 2.04245\\
+        115200 & 1.02359\\
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\begin{table}[h!]
+  \begin{center}
+    \caption{Cálculo da eficiência com introdução de erros}
+    \label{tab:table1}
+    \begin{tabular}{l|c|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Baudrate & \textbf{$  T_{execucao} (s) $} & Nº pacotes enviados & Nº pacotes reenviados \\
+      \hline
+        9600 & 15.11709 & 60.00000 & 12.00000\\
+        19200 & 7.11741 & 56.00000 & 8.00000\\
+        38400 & 4.08493 & 63.00000 & 15.00000\\
+        57600 & 2.55259 & 59.33333 & 11.33333\\
+        115200 & 1.43659 & 68.00000 & 20.00000\\
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\begin{table}[h!]
+  \begin{center}
+    \caption{Cálculo da eficiência com variação do chunksize}
+    \label{tab:table1}
+    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Chunksize & \textbf{$  T_{execucao} (s) $} \\
+      \hline
+        1 & 58.20041\\
+        10 & 8.42766\\
+        100 & 3.44801\\
+        1000 & 2.94857\\
+        10000 & 2.90310\\
+    \end{tabular}
+  \end{center}
+\end{table}
+
+//TODO dizer q tempo de prop adiciona aqui
+\begin{table}[h!]
+  \begin{center}
+    \caption{Cálculo da eficiência com variação tempo de propagação}
+    \label{tab:table1}
+    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Tempo de propagação acrescido ($\mu s$) & \textbf{$  T_{execucao} (s) $} \\
+      \hline
+        10 & 1.02574\\
+        100 & 1.85891\\
+        200 & 3.00061\\
+        500 & 6.45144\\
+        1000 & 12.271156\\
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\begin{table}[h!]
+  \begin{center}
+    \caption{Cálculo da eficiência com variação do tamanho do ficheiro}
+    \label{tab:table1}
+    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Tamanho do ficheiro ($\mu s$) & \textbf{$  T_{execucao} (s) $} \\
+      \hline
+        8 & 0.03026\\
+        10968 & 3.06077\\
+        239765 & 66.29077\\
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\chapter{Graphs}
+\begin{tikzpicture}
+\begin{axis}[
+    title={Tempo de execução em função da baudrate},
+    width=12cm,
+    xlabel={Baudrate [B/s]},
+    ylabel={Tempo de execução [s]},
+    ymin=0, ymax=15,
+    xmode=log,
+    xtick={9600, 19200, 38400, 57600, 115200},
+    xticklabels={9600, 19200, 38400, 57600, 115200},
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+    nodes near coords,
+]
+
+\addplot[
+    color=blue,
+    ]
+    coordinates {
+        (9600, 12.23109)
+        (19200, 6.11795)
+        (38400, 3.06131)
+        (57600, 2.04245)
+        (115200, 1.02359)
+    };
+\end{axis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{axis}[
+    title={Tempo de execução em função do chunksize},
+    width=12cm,
+    xlabel={Chunksize [B]},
+    ylabel={Tempo de execução [s]},
+    ymin=0, ymax=60,
+    xmode=log,
+    xtick={1, 10, 100, 1000, 10000},
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+    nodes near coords,
+]
+
+\addplot[
+    color=blue,
+    ]
+    coordinates {
+        (1 , 58.20041)
+        (10 , 8.42766)
+        (100 , 3.44801)
+        (1000 , 2.94857)
+        (10000 , 2.90310)
+    };
+\end{axis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{axis}[
+    title={Tempo de execução em função do chunksize},
+    width=12cm,
+    xlabel={Tempo de propagação acrescido [B]},
+    ylabel={Tempo de execução [s]},
+    ymin=0, ymax=15,
+    xtick={1, 100, 200, 500, 1000},
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+    nodes near coords,
+]
+
+\addplot[
+    color=blue,
+    ]
+    coordinates {
+        (10 , 1.02574)
+        (100 , 1.85891)
+        (200 , 3.00061)
+        (500 , 6.45144)
+        (1000 , 12.271156)
+    };
+\end{axis}
+\end{tikzpicture}
 
 \chapter{Conclusões}
 
