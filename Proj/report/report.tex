@@ -5,13 +5,16 @@
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{float}
 \usepackage{listings}
-\usepackage{xcolor}
-\usepackage{pgfplots}
 \lstset {
     language=C,
     backgroundcolor=\color{black!12}, % set backgroundcolor
     basicstyle=\footnotesize, % basic font setting
 }
+\usepackage{xcolor}
+\usepackage{pgfplots}
+\usepackage{sectsty}
+\chapternumberfont{\huge} 
+\chaptertitlefont{\huge}
 
 \begin{document}
 
@@ -357,6 +360,20 @@ Assumimos que o programa tem o funcionamento correto, pois todos estes testes
 que realizamos, tanto com uma \textit{serial port} real como com uma virtual,
 resultaram na transferência do ficheiro escolhido na sua integra de forma correta.
 
+Abaixo seguem-se alguns exemplos de execução do código nessas condições. É de notar
+que não temos nenhum exemplo em que ocorra um corte na ligação, pois estes testes
+foram realizados com recurso a portas virtuais.
+
+Neste caso passámos o ficheiro pinguim.gif sem nenhuma condição em particular.
+\centering{\includegraphics[width=0.8\columnwidth]{images/validacao1.png}}
+
+Neste caso passámos o ficheiro pinguim.gif com um \textit{chunk size} diferente.
+\centering{\includegraphics[width=0.8\columnwidth]{images/validacao2.png}}
+
+Neste caso passámos o ficheiro pinguim.gif com um \textit{baud rate} diferente e
+introdução artificial de erros.
+\centering{\includegraphics[width=0.8\columnwidth]{images/validacao3.png}}
+
 \chapter{Eficiência do protocolo de ligação de dados}
 
 \subsection{Tempo de propagação}
@@ -387,14 +404,15 @@ absoluto de envio do byte de teste, e o tempo de receção do byte de teste, res
 De modo a obter resultados mais precisos foram efetuados três medições
 para cada cálculo do tempo de execução. As medições foram feitas remotamente
 nos computadores laboratoriais da sala I320. Em cada medição foi usado um
-\textit{chunksize} de 256 Bytes e o ficheiro usado foi o fornecido no moodle
-da unidade curricular (pinguim.gif).
+\textit{chunksize} de 256 Bytes (a não ser que seja indicado o contrário)
+e o ficheiro usado foi o fornecido no moodle da unidade curricular
+(pinguim.gif).
 \begin{table}[h!]
   \begin{center}
     \caption{Cálculo da eficiência sem introdução de erros}
     \label{tab:table1}
     \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Baudrate & \textbf{$  T_{execucao} (s) $} \\
+        Baudrate & \textbf{$  T_{envio} (s) $} \\
       \hline
         9600 & 12.23109\\
         19200 & 6.11795\\
@@ -410,7 +428,7 @@ da unidade curricular (pinguim.gif).
     \caption{Cálculo da eficiência com introdução de erros}
     \label{tab:table1}
     \begin{tabular}{l|c|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Baudrate & \textbf{$  T_{execucao} (s) $} & Nº pacotes enviados & Nº pacotes reenviados \\
+        Baudrate & \textbf{$  T_{envio} (s) $} & Nº pacotes enviados & Nº pacotes reenviados \\
       \hline
         9600 & 15.11709 & 60.00000 & 12.00000\\
         19200 & 7.11741 & 56.00000 & 8.00000\\
@@ -426,7 +444,7 @@ da unidade curricular (pinguim.gif).
     \caption{Cálculo da eficiência com variação do chunksize}
     \label{tab:table1}
     \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Chunksize & \textbf{$  T_{execucao} (s) $} \\
+        Chunksize & \textbf{$  T_{envio} (s) $} \\
       \hline
         1 & 58.20041\\
         10 & 8.42766\\
@@ -444,7 +462,7 @@ acrescido ao $T_{prop}$ da \textit{serial port}: \textbf{2820465.0 ns}.
     \caption{Cálculo da eficiência com variação tempo de propagação}
     \label{tab:table1}
     \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Tempo de propagação acrescido ($\mu s$) & \textbf{$  T_{execucao} (s) $} \\
+        Tempo de propagação acrescido ($\mu s$) & \textbf{$  T_{envio} (s) $} \\
       \hline
         10 & 1.02574\\
         100 & 1.85891\\
@@ -460,7 +478,7 @@ acrescido ao $T_{prop}$ da \textit{serial port}: \textbf{2820465.0 ns}.
     \caption{Cálculo da eficiência com variação do tamanho do ficheiro}
     \label{tab:table1}
     \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Tamanho do ficheiro ($bytes$) & \textbf{$  T_{execucao} (s) $} \\
+        Tamanho do ficheiro ($bytes$) & \textbf{$  T_{envio} (s) $} \\
       \hline
         8 & 0.03026\\
         10968 & 3.06077\\
