@@ -6,10 +6,10 @@
 \usepackage{float}
 \usepackage{listings}
 \usepackage{xcolor}
-\lstset { %
+\lstset {
     language=C,
     backgroundcolor=\color{black!5}, % set backgroundcolor
-    basicstyle=\footnotesize,% basic font setting
+    basicstyle=\footnotesize, % basic font setting
 }
 
 \begin{document}
@@ -29,19 +29,44 @@
 \newpage
 
 \chapter{Sumário}
-// TODO
+
+Neste trabalho foram aplicados os conceitos teóricos referentes aos protocolos
+de transferência de dados, leccionados na unidade curricular de
+\textbf{Redes de Computadores}, de modo a escrever uma aplicação que enviasse
+um ficheiro entre duas \textit{serial ports}.
+
+Neste relatório conclui se que o funcionamento do código está correto e é
+válido, e que a sua eficiência de transmissão depende em grande parte das
+configurações feitas através dos argumentos da linha de comandos.
 
 {\let\clearpage\relax \chapter{Introdução}}
+
 Este relatório incide sobre o projecto desenvolvido para a unidade curricular
 de RCOM. Neste projecto foi pedido o desenvolvimento de uma aplicação, em
 linguagem C, que permitisse o envio de ficheiros, entre dois computadores,
 através de uma \textit{serial port}.
 
-Além disso, esta aplicação devia estar organizada em camadas independentes
+Além disso, esta aplicação deve estar organizada em camadas independentes
 (discutidas mais à frente) e deve ser resistente a ruído e desconexão durante
 o envio de informação.
 
-// TODO Dizer o q cada chapter tem
+Descrição da informação nos capítulos seguintes:
+\begin{itemize}
+  \item \textbf{Arquitetura} - indicação da divisão do código em camadas e em
+    interface.
+  \item \textbf{Estrutura do código} - API, principais estruturas de dados e
+    funções, e como estas se relacionam com a arquitectura.
+  \item \textbf{Casos de usos principais} - identificação dos casos e sequência
+    de chamadas de funções.
+  \item \textbf{Protocolos} - identificação dos principais aspectos funcionais
+    dos protocolos implementados e a forma como foram implementados.
+  \item \textbf{Validação} - descrição dos testes efectuados e apresentação dos
+    resultados obtidos
+  \item \textbf{Eficiência do protocolo de ligação de dados} - caracterização
+    estatística da eficiência do protocolo implementado.
+  \item \textbf{Conclusões} - síntese da informação apresentada nos capítulos
+    anteriores.
+\end{itemize}
 
 {\let\clearpage\relax \chapter{Arquitetura}}
 
@@ -160,19 +185,22 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
 
 {\let\clearpage\relax \chapter{Casos de usos principais}}
 
-A nossa solução para a proposta de trabalho contempla dois casos de uso: o envio de um ficheiro
-como emissor e a receção do mesmo como recetor. Este modo de funcionamento deve ser referido
-na chamada do programa através da flag \textit{-s RECEIVER} ou \textit{-s TRANSMITTER}.
+A nossa solução contempla dois casos de uso: o envio de um ficheiro como emissor
+e a receção do mesmo como recetor. Este modo de funcionamento deve ser referido
+na chamada do programa através do argumento \textit{-s RECEIVER} ou
+\textit{-s TRANSMITTER}. Além disso, é necessário expecificar o número da
+\textit{serial port} a usar, por exemplo: \textit{-p 0}. É de notar que o
+argumento \textit{-b baud rate} pode ser especificado, mas para garantir o
+correto funcionamento da aplicação, deve ser igual nos dois extremos da ligação.
 
-Para o programa ser executado como recetor é obrigatório especificar o número da porta série a usar.
+Se o programa for executado como emissor, será necessário especificar o caminho
+para o ficheiro a enviar, em adição aos outros argumentos já enunciados
+anteriormente. Também pode ser útil referir o \textit{chunk size} a usar. O
+recetor ignorará a especificação destes dois argumentos.
 
+Os diagramas de sequência de chamadas de funções encontram-se no anexo B.
 
-
-Se o programa for executado como emissor, será necessário especificar o caminho para o ficheiro a enviar,
-em adição aos outros argumentos já enunciados anteriormente. Enquanto emissor, também pode ser útil referir
-o \textit{chunksize} a usar.
-
-\chapter{Protocolos}
+{\let\clearpage\relax \chapter{Protocolos}}
 
 \section{Protocolo de ligação lógica}
 
@@ -293,7 +321,7 @@ Se esta não for comprida, é evidente que ocorreu um erro grave e que a execuç
 deve ser terminada.
 
 No lado do emissor, o ficheiro é lido e, em seguida, enviado em blocos de
-tamanho \textit{chunksize} bytes (valor configurável). No lado do recetor, o
+tamanho \textit{chunksize} bytes (valor configurável). No lado do receptor, o
 ficheiro é lido em blocos de tamanho \textit{chunksize} definido pelo emissor.
 Quando a transmissão termina, a informação lida é escrita no ficheiro.
 
@@ -350,5 +378,17 @@ mais evidente quando se realiza a comparação entre dois valores baixos de
 \textit{chunk size}. É de notar que em casos em que o \textbf{FER} é alto,
 o aumento do valor de \textit{chunk size} resultará em transferências mais
 lentas, pois a quantidade de bytes a retransmitir a cada falha será maior.
+
+\chapter*{Anexo A}
+\addcontentsline{toc}{chapter}{Anexo A}
+
+// TODO código
+
+\chapter*{Anexo B}
+\addcontentsline{toc}{chapter}{Anexo B}
+
+\centering{\includegraphics[width=0.9\columnwidth]{images/transmitter.pdf}}
+\newpage
+\centering{\includegraphics[width=0.9\columnwidth]{images/receiver.pdf}}
 
 \end{document}
