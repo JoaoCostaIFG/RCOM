@@ -411,14 +411,14 @@ e o ficheiro usado foi o fornecido no moodle da unidade curricular
   \begin{center}
     \caption{Cálculo da eficiência sem introdução de erros}
     \label{tab:table1}
-    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Baudrate & \textbf{$  T_{envio} (s) $} \\
+    \begin{tabular}{l|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Baudrate & \textbf{$  T_{envio} (s) $} & S \\
       \hline
-        9600 & 12.23109\\
-        19200 & 6.11795\\
-        38400 & 3.06131\\
-        57600 & 2.04245\\
-        115200 & 1.02359\\
+        9600 & 12.23109 & 0.98063\\
+        19200 & 6.11795 & 0.96201\\
+        38400 & 3.06131 & 0.92686\\
+        57600 & 2.04245 & 0.89423\\
+        115200 & 1.02359 & 0.80905\\
     \end{tabular}
   \end{center}
 \end{table}
@@ -427,14 +427,14 @@ e o ficheiro usado foi o fornecido no moodle da unidade curricular
   \begin{center}
     \caption{Cálculo da eficiência com introdução de erros}
     \label{tab:table1}
-    \begin{tabular}{l|c|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Baudrate & \textbf{$  T_{envio} (s) $} & Nº pacotes enviados & Nº pacotes reenviados \\
+    \begin{tabular}{l|c|c|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Baudrate & \textbf{$  T_{envio} (s) $} & Nº pacotes enviados & Nº pacotes reenviados & S\\
       \hline
-        9600 & 15.11709 & 60.00000 & 12.00000\\
-        19200 & 7.11741 & 56.00000 & 8.00000\\
-        38400 & 4.08493 & 63.00000 & 15.00000\\
-        57600 & 2.55259 & 59.33333 & 11.33333\\
-        115200 & 1.43659 & 68.00000 & 20.00000\\
+        9600 & 15.11709 & 60.00000 & 12.00000 & 0.98427\\
+        19200 & 7.11741 & 56.00000 & 8.00000 & 0.96717\\
+        38400 & 4.08493 & 63.00000 & 15.00000 & 0.94416\\
+        57600 & 2.55259 & 59.33333 & 11.33333 & 0.91354\\
+        115200 & 1.43659 & 68.00000 & 20.00000 & 0.85604\\
     \end{tabular}
   \end{center}
 \end{table}
@@ -443,14 +443,14 @@ e o ficheiro usado foi o fornecido no moodle da unidade curricular
   \begin{center}
     \caption{Cálculo da eficiência com variação do chunksize}
     \label{tab:table1}
-    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Chunksize & \textbf{$  T_{envio} (s) $} \\
+    \begin{tabular}{l|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Chunksize & \textbf{$  T_{envio} (s) $} & S \\
       \hline
-        1 & 58.20041\\
-        10 & 8.42766\\
-        100 & 3.44801\\
-        1000 & 2.94857\\
-        10000 & 2.90310\\
+        1 & 58.20041 & 0.48482 \\
+        10 & 8.42766 & 0.57676\\
+        100 & 3.44801 & 0.84791\\
+        1000 & 2.94857 & 0.97946\\
+        10000 & 2.90310 & 0.99787\\
     \end{tabular}
   \end{center}
 \end{table}
@@ -461,14 +461,14 @@ acrescido ao $T_{prop}$ da \textit{serial port}: \textbf{2820465.0 ns}.
   \begin{center}
     \caption{Cálculo da eficiência com variação tempo de propagação}
     \label{tab:table1}
-    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Tempo de propagação acrescido ($\mu s$) & \textbf{$  T_{envio} (s) $} \\
+    \begin{tabular}{l|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Tempo de propagação acrescido ($\mu s$) & \textbf{$  T_{envio} (s) $} & S \\
       \hline
-        10 & 1.02574\\
-        100 & 1.85891\\
-        200 & 3.00061\\
-        500 & 6.45144\\
-        1000 & 12.271156\\
+        10 & 1.02574 & 0.80883\\
+        100 & 1.85891 & 0.88139\\
+        200 & 3.00061 & 0.92062\\
+        500 & 6.45144 & 0.95777\\
+        1000 & 12.271156 & 0.97402\\
     \end{tabular}
   \end{center}
 \end{table}
@@ -477,12 +477,12 @@ acrescido ao $T_{prop}$ da \textit{serial port}: \textbf{2820465.0 ns}.
   \begin{center}
     \caption{Cálculo da eficiência com variação do tamanho do ficheiro}
     \label{tab:table1}
-    \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Tamanho do ficheiro ($bytes$) & \textbf{$  T_{envio} (s) $} \\
+    \begin{tabular}{l|c|c} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        Tamanho do ficheiro ($bytes$) & \textbf{$  T_{envio} (s) $} & S\\
       \hline
-        8 & 0.03026\\
-        10968 & 3.06077\\
-        239765 & 66.29077\\
+        8 & 0.03026 & 0.99421\\
+        10968 & 3.06077 & 0.92685\\
+        239765 & 66.29077 & 0.92621\\
     \end{tabular}
   \end{center}
 \end{table}
@@ -604,6 +604,38 @@ da FEUP ser muito fraca.
         (0.34247 , 1.59548)
         (0.48387 , 2.04525)
         (0.48936 , 2.04511)
+    };
+\end{axis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{axis}[
+    title={Eficiência em função de FER},
+    width=12cm,
+    xlabel={FER [Err/Frame]},
+    ylabel={S},
+    ymin=0, ymax=1,
+    legend pos=north west,
+    ymajorgrids=true,
+    grid style=dashed,
+]
+
+\addplot[
+    color=blue,
+    ]
+    coordinates {
+        (0.11111 ,0.73618)
+        (0.14286 ,0.71273)
+        (0.15789 ,0.70437)
+        (0.18644 ,0.68471)
+        (0.21311 ,0.66415)
+        (0.22581 ,0.65528)
+        (0.27273 ,0.62330)
+        (0.28358 ,0.61405)
+        (0.30435 ,0.59902)
+        (0.34247 ,0.57106)
+        (0.48387 ,0.46161)
+        (0.48936 ,0.45669)
     };
 \end{axis}
 \end{tikzpicture}
