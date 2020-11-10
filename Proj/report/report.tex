@@ -1,6 +1,6 @@
 \documentclass[11pt]{report}
 
-\usepackage[margin=0.5in]{geometry}
+\usepackage[margin=0.45in]{geometry}
 
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{float}
@@ -13,8 +13,8 @@
 \usepackage{xcolor}
 \usepackage{pgfplots}
 \usepackage{sectsty}
-\chapternumberfont{\huge} 
-\chaptertitlefont{\huge}
+\chapternumberfont{\LARGE} 
+\chaptertitlefont{\LARGE}
 
 \begin{document}
 
@@ -24,8 +24,9 @@
 \date{\today{}}
 
 \begin{figure}[b]
-	\centering
-	\includegraphics[width=0.6\textwidth]{feup_logo.png}
+  \begin{center}
+    \includegraphics[width=0.6\textwidth]{feup_logo.png}
+  \end{center}
 \end{figure}
 \maketitle{}
 
@@ -159,16 +160,15 @@ o tamanho \textit{len}.
 
 A nossa solução contempla dois casos de uso: o envio de um ficheiro como emissor
 e a receção do mesmo como recetor. Este modo de funcionamento deve ser referido
-na chamada do programa através do argumento \textit{-s RECEIVER} ou
-\textit{-s TRANSMITTER}. Além disso, é necessário expecificar o número da
-\textit{serial port} a usar, por exemplo: \textit{-p 0}. É de notar que o
-argumento \textit{-b baud rate} pode ser especificado, mas para garantir o
-correto funcionamento da aplicação, deve ser igual nos dois extremos da ligação.
+na chamada do programa através do argumento \textit{-s RECEIVER|TRANSMITTER}.
+Além disso, é necessário especificar o número da \textit{serial port} a usar,
+por exemplo: \textit{-p 0}. É de notar que o argumento \textit{-b baud rate}
+pode ser especificado, mas para garantir o correto funcionamento da aplicação,
+deve ser igual nos dois extremos da ligação.
 
 Se o programa for executado como emissor, será necessário especificar o caminho
 para o ficheiro a enviar, em adição aos outros argumentos já enunciados
-anteriormente. Também pode ser útil referir o \textit{chunk size} a usar. O
-receptor ignorará a especificação destes dois argumentos.
+anteriormente. Também pode ser útil referir o \textit{chunk size}.
 
 Nota: Os diagramas de sequência de chamadas de funções encontram-se no anexo B.
 
@@ -178,21 +178,20 @@ Nota: Os diagramas de sequência de chamadas de funções encontram-se no anexo 
 
 Este protocolo é responsável pela preparação da informação a enviar pela
 \textit{serial port} e os mecanismos de recuperação de erros/falhas.
-
 A informação é transmitida em tramas. Existem três tipos de tramas:
-\textbf{informação, supervisão, e não numeradas}. As tramas de informação
-carregam os dados a enviar. As tramas de supervisão indicam se um dada de
-trama de informação foi bem (ou mal) recebida. As tramas não numeradas servem
-para implementar os mecanismos de inicio e conclusão de uma conexão.
+\textbf{informação, supervisão, e não numeradas}. As de informação carregam
+os dados a enviar, as de supervisão indicam se um dada de trama de informação
+foi bem (ou mal) recebida e as não numeradas implementam os mecanismos de
+inicio e conclusão de uma conexão.
 
 As tramas começam e terminam por um byte de \textit{flag} (0x7E) e são
-identificadas por um bit de sequência que oscila entre 0 e 1. Este bit é útil
+identificadas por um bit de sequência que 'oscila' entre 0 e 1. Este bit é útil
 para que o protocolo consiga garantir que nenhuma trama foi perdida ou repetida.
 
 De modo a garantir que o byte correspondente à \textit{flag} (byte que indica
 o inicio e o final de um trama) não ocorre no campo de informação ou no BCC,
-é realizado o byte \textit{stuffing} (e consequentemente \textit{destuffing})
-destas.
+é realizado o byte \textit{stuffing} (e consequente \textit{destuffing}) destas.
+
 \begin{lstlisting}
 int stuffByte(unsigned char byte, unsigned char res[]) {
   int bytes_returned = 1;
@@ -224,7 +223,7 @@ int stuffString(unsigned char *str, unsigned char *res, int size) {
 unsigned char destuffByte(unsigned char byte) { return byte ^ STUFF_BYTE; }
 \end{lstlisting}
 
-O cabeçalho de cada trama é protegido por um BCC. As tramas de informação têm um
+O cabeçalho das tramas é protegido por um BCC. As tramas de informação têm um
 segundo BCC que protege a informação transmitida.
 \begin{lstlisting}
 unsigned char calcBCC2Field(unsigned char *buf, int size) {
@@ -239,28 +238,19 @@ bool checkBCC2Field(unsigned char *buf, int size) {
 }
 \end{lstlisting}
 
-Este protocolo faz uso de uma máquina de estados de modo a conseguir interpretar
+Este protocolo faz uso de uma máquina de estados para conseguir interpretar
 os bytes recebidos. Esta interpretação facilita o \textit{byte destuffing}, a
 recuperação de erros e a identificação do final de tramas.
 \begin{lstlisting}
 /* STATE MACHINE */
-typedef enum {
-  FLAG_RCV = 0,
-  A_RCV = 1,
-  CI_RCV = 2,
-  CS_RCV = 3,
-  BCC_RCV = 4,
-  OTHER_RCV = 5
-} transitions;
-
-typedef enum {
-  START_ST = 0,
-  FLAG_ST = 1,
-  A_ST = 2,
-  CS_ST = 3,
-  BCC_ST = 4,
-  CI_ST = 5,
-  D_ST = 6,
+typedef enum {                            typedef enum {
+  START_ST = 0,                             FLAG_RCV = 0,
+  FLAG_ST = 1,                              A_RCV = 1,
+  A_ST = 2,                                 CI_RCV = 2,
+  CS_ST = 3,                                CS_RCV = 3,
+  BCC_ST = 4,                               BCC_RCV = 4,
+  CI_ST = 5,                                OTHER_RCV = 5
+  D_ST = 6,                               } transitions;
   STOP_ST = 7
 } state;
 
@@ -279,26 +269,26 @@ static state state_machine[][6] = {
 
 \section{Protocolo de aplicação}
 
-Este protocolo é responsável por abrir a porta série, ler/escrever o ficheiro
+Este protocolo é responsável por abrir a porta série e ler/escrever o ficheiro
 transferido. Para isso, inicia a camada de ligação de dados, faz a segmentação
 do ficheiro a transmitir, interpreta a informação recebida e escreve a
 informação para o ficheiro resultante.
 
-Os pacotes destes protocolo possuem um cabeçalho que indica o tipo de mensagem
+Os pacotes deste protocolo possuem um cabeçalho que indica o tipo de mensagem
 que contém: controlo (tamanho ficheiro e nome do ficheiro) ou bloco de
 informação. No caso dos pacotes de informação, o cabeçalho contém um byte
 de sequência que indica a ordem dos pacotes, começando em zero. A cada pacote
 recebido este número deve aumentar por um e voltar a zero após o número 255.
-Se esta não for comprida, é evidente que ocorreu um erro grave e que a execução
+Se esta não for cumprida, é evidente que ocorreu um erro grave e que a execução
 deve ser terminada.
 
 No lado do emissor, o ficheiro é lido e, em seguida, enviado em blocos de
 tamanho \textit{chunksize} bytes (valor configurável). No lado do receptor, o
-ficheiro é lido em blocos de tamanho \textit{chunksize} definido pelo emissor.
-Quando a transmissão termina, a informação lida é escrita no ficheiro.
+ficheiro é lido em blocos do mesmo tamanho (definido pelo emissor). Quando a
+transmissão termina, a informação lida é escrita no ficheiro.
 
 O primeiro e último pacotes transmitidos pelo protocolo são pacotes de controlo.
-Estes pacotes contém informação relativa ao nome do ficheiro e o seu tamanho e
+Estes pacotes contém informação relativa ao nome do ficheiro e o seu tamanho, e
 um byte identificador. Estes dois pacotes devem ser idênticos, à excepção do byte
 identificador (um sinalizará o inicio e o outro o fim da transmissão).
 
@@ -310,34 +300,33 @@ e do \textit{chunksize} (este afecta o tamanho das tramas).
 
 Fizemos três tipos de envios: envios sem introdução de erros, envios com cortes
 na ligação, e envios com erros aleatórios (nomeante no \textbf{BCC} do cabeçalho).
-
 Assumimos que o programa tem o funcionamento correto, pois todos estes testes
 que realizamos, tanto com uma \textit{serial port} real como com uma virtual,
 resultaram na transferência do ficheiro escolhido na sua integra de forma correta.
 
-Abaixo seguem-se alguns exemplos de execução do código nessas condições. É de notar
-que não temos nenhum exemplo em que ocorra um corte na ligação, pois estes testes
-foram realizados com recurso a portas virtuais.
-
-Neste caso passámos o ficheiro pinguim.gif sem nenhuma condição em particular.
-\center{\includegraphics[width=0.7\columnwidth]{images/validacao1.png}}
+Abaixo seguem-se alguns exemplos de execução do código nessas condiçõesusando uma
+porta virtual. 
 
 Neste caso passámos o ficheiro pinguim.gif com um \textit{chunk size} diferente.
-\center{\includegraphics[width=0.7\columnwidth]{images/validacao2.png}}
+\begin{center}
+  \includegraphics[width=0.7\columnwidth]{images/validacao2.png}
+\end{center}
 
 Neste caso passámos o ficheiro pinguim.gif com um \textit{baud rate} diferente e
 introdução artificial de erros.
-\center{\includegraphics[width=0.7\columnwidth]{images/validacao3.png}}
+\begin{center}
+  \includegraphics[width=0.7\columnwidth]{images/validacao3.png}
+\end{center}
 
 {\let\clearpage\relax \chapter{Eficiência do protocolo de ligação de dados}}
 
 \subsection{Tempo de propagação}
 
-Com o objetivo de medir de forma fiável a eficiência do protocolo, foi calculado
-o tempo de propagação $T_{prop}$ através da fórmula
-$T_{prop} = T_{absRecebido} - T_{absEnviado}$. Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo
-absoluto de envio do byte de teste, e o tempo de receção do byte de teste,
-respetivamente.
+De modo a medir a eficiência do protocolo, foi calculado o tempo de propagação
+$T_{prop}$ através da fórmula $T_{prop} = T_{absRecebido} - T_{absEnviado}$.
+Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo absoluto de envio do byte de
+teste, e o tempo de receção do byte de teste, respetivamente. Nota: os gráficos
+correspondentes aos seguintes dados encontram-se no anexo C.
 
 \begin{table}[h!]
   \begin{center}
@@ -357,12 +346,11 @@ respetivamente.
 
 \subsection{Análise de eficiência}
 
-De modo a obter resultados mais precisos foram efetuados três medições
-para cada cálculo do tempo de execução. As medições foram feitas remotamente
-nos computadores laboratoriais da sala I320. Em cada medição foi usado um
-\textit{chunksize} de 256 Bytes (a não ser que seja indicado o contrário)
-e o ficheiro usado foi o fornecido no moodle da unidade curricular
-(pinguim.gif).
+Foram efetuadas sempre três medições para cada cálculo (o resultado mostrado
+é a média). As medições foram feitas remotamente nos computadores laboratoriais
+da sala I320. Em cada teste foi usado o ficheiro \textit{pinguim.gif} e o valor
+de 256 bytes para o \textit{chunk size} por defeito.
+
 \begin{table}[h!]
   \begin{center}
     \caption{Cálculo da eficiência sem introdução de erros}
@@ -445,11 +433,11 @@ acrescido ao $T_{prop}$ da \textit{serial port}: \textbf{2820465.0 ns}.
 
 {\let\clearpage\relax \chapter{Conclusões}}
 
-O código desenvolvido para o projeto é válido e funciona corretamente.
+O código desenvolvido para o projeto é válido e funciona corretamente, pois passou
+nos testes que definimos (como foi demonstrado ao docente).
 
 O aumento do valor do \textit{baud rate} resulta sempre em envios mais rápidos,
-e vice-versa. No entanto, o aumento do \textit{baud rate} diminui a eficiência.
-
+e vice-versa. No entanto, isso diminui a eficiência.
 Em circunstâncias em que a probabilidade de ocorrência de erros é baixa
 (\textbf{FER} baixo), o aumento do \textit{chunk size} (e consequente aumento
 do tamanho das tramas) resulta em transferência mais rápidas. Este efeito é
@@ -2667,9 +2655,13 @@ void vec_delete(vector *vec, size_t i);
 \chapter*{Anexo B}
 \addcontentsline{toc}{chapter}{Anexo B}
 
-\center{\includegraphics[width=0.9\columnwidth]{images/transmitter.pdf}}
+\begin{center}
+  \includegraphics[width=0.9\columnwidth]{images/transmitter.pdf}
+\end{center}
 \newpage
-\center{\includegraphics[width=0.9\columnwidth]{images/receiver.pdf}}
+\begin{center}
+  \includegraphics[width=0.9\columnwidth]{images/receiver.pdf}
+\end{center}
 
 \chapter*{Anexo C}
 \addcontentsline{toc}{chapter}{Anexo C}
