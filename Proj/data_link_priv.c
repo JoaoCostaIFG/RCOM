@@ -386,6 +386,7 @@ int inputLoopSET(struct linkLayer *linkLayer, int fd) {
       if (resendHandler(linkLayer, fd) < 0) {
         return -1;
       }
+      continue;
     }
 
     transition = byteToTransitionSET(currByte, buf, curr_state);
@@ -435,6 +436,7 @@ int inputLoopUA(struct linkLayer *linkLayer, int fd, bool isRecv) {
       if (resendHandler(linkLayer, fd) < 0) {
         return -1;
       }
+      continue;
     }
 
     transition = byteToTransitionUA(currByte, buf, curr_state, isRecv);
@@ -639,6 +641,7 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
         if (resendHandler(linkLayer, fd) < 0) {
           return -1;
         }
+        continue;
       }
 
       transition = byteToTransitionRR(currByte, buf, curr_state);
@@ -711,6 +714,7 @@ int inputLoopDISC(struct linkLayer *linkLayer, int fd, bool isRecv) {
       if (resendHandler(linkLayer, fd) < 0) {
         return -1;
       }
+      continue;
     }
 
     transition = byteToTransitionDISC(currByte, buf, curr_state, isRecv);
