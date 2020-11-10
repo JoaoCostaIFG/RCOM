@@ -54,7 +54,7 @@ int llopen(int porta, enum applicationStatus appStatus) {
 
   /*
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-    leitura do(s) próximo(s) caracter(es)
+    leitura do(s) proximo(s) caracter(es)
   */
   newtio.c_cc[VTIME] = MYVTIME; /* inter-unsigned character timer unused */
   newtio.c_cc[VMIN] = MYVMIN;   /* blocking read until X chars received */
@@ -93,7 +93,7 @@ int llread(int fd, char **buffer) {
   int packet_length = getFrame(&linkLayer, fd, (unsigned char **)buffer);
 
   if (packet_length == 0)
-    return 0; // Morreu só neste
+    return 0; // Morreu so neste
   else if (packet_length < 0)
     return -1; // Morreu mesmo
 
