@@ -382,13 +382,13 @@ absoluto de envio do byte de teste, e o tempo de receção do byte de teste, res
   \end{center}
 \end{table}
 
-<<<<<<< HEAD
 \subsection{Análise de eficiência}
 
 De modo a obter resultados mais precisos foram efetuados três medições
 para cada cálculo do tempo de execução. As medições foram feitas remotamente
 nos computadores laboratoriais da sala I320. Em cada medição foi usado um
-\textit{chunksize} de 256 Bytes e o ficheiro usado foi o fornecido pelo moodle (pinguim.gif).
+\textit{chunksize} de 256 Bytes e o ficheiro usado foi o fornecido no moodle
+da unidade curricular (pinguim.gif).
 \begin{table}[h!]
   \begin{center}
     \caption{Cálculo da eficiência sem introdução de erros}
@@ -437,7 +437,8 @@ nos computadores laboratoriais da sala I320. Em cada medição foi usado um
   \end{center}
 \end{table}
 
-//TODO dizer q tempo de prop adiciona aqui
+Nota: o tempo de propagação ($T_{prop}$) descrito na tabela abaixo é o valor
+acrescido ao $T_{prop}$ da \textit{serial port}: \textbf{2820465.0 ns}.
 \begin{table}[h!]
   \begin{center}
     \caption{Cálculo da eficiência com variação tempo de propagação}
@@ -459,7 +460,7 @@ nos computadores laboratoriais da sala I320. Em cada medição foi usado um
     \caption{Cálculo da eficiência com variação do tamanho do ficheiro}
     \label{tab:table1}
     \begin{tabular}{l|r} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
-        Tamanho do ficheiro ($\mu s$) & \textbf{$  T_{execucao} (s) $} \\
+        Tamanho do ficheiro ($bytes$) & \textbf{$  T_{execucao} (s) $} \\
       \hline
         8 & 0.03026\\
         10968 & 3.06077\\
