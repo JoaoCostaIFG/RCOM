@@ -309,16 +309,18 @@ com tamanhos e formatos distintos, fazendo variar o valor do \textit{baudrate}
 e do \textit{chunksize} (este afecta o tamanho das tramas).
 
 Fizemos três tipos de envios: envios sem introdução de erros, envios com cortes
-na ligação, e envios com erros aleatorios (nomeadante no BCC do cabeçalho).
+na ligação, e envios com erros aleatórios (nomeante no \textbf{BCC} do cabeçalho).
 
-// TODO mostrar prints do prog
+Assumimos que o programa tem o funcionamento correto, pois todos estes testes
+que realizamos, tanto com uma \textit{serial port} real como com uma virtual,
+resultaram na transferência do ficheiro escolhido na sua integra de forma correta.
 
 \chapter{Eficiência do protocolo de ligação de dados}
 
-Com o objetivo de medir de forma fiável a eficiência do protocolo, foi calculado
-o tempo de propagação $T_{prop}$ através da fórmula
-$T_{prop} = T_{absRecebido} - T_{absEnviado}$. Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo
-absoluto de envio do byte de teste, e o tempo de receção do byte de teste, respetivamente.
+Com o objectivo de medir de forma fiável a eficiência do protocolo, foi calculado
+o tempo de propagação $T_{prop}$ através da fórmula $T_{prop} = T_{absRecebido} -
+T_{absEnviado}$. Sendo $T_{absRecebido}$ e $T_{absEnviado}$ o tempo absoluto de
+envio do byte de teste, e o tempo de recessão do byte de teste, respectivamente.
 
 \begin{table}[h!]
   \begin{center}
@@ -336,7 +338,17 @@ absoluto de envio do byte de teste, e o tempo de receção do byte de teste, res
   \end{center}
 \end{table}
 
-
 \chapter{Conclusões}
+
+O aumento do valor do \textit{baud rate} resulta sempre em envios mais rápidos,
+e vice-versa.
+
+Em circunstâncias em que a probabilidade de ocorrência de erros é baixa
+(\textbf{FER} baixo), o aumento do \textit{chunk size} (e consequente aumento
+do tamanho das tramas) resulta em transferência mais rápidas. Este efeito é
+mais evidente quando se realiza a comparação entre dois valores baixos de
+\textit{chunk size}. É de notar que em casos em que o \textbf{FER} é alto,
+o aumento do valor de \textit{chunk size} resultará em transferências mais
+lentas, pois a quantidade de bytes a retransmitir a cada falha será maior.
 
 \end{document}
