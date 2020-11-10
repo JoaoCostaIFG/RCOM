@@ -106,8 +106,7 @@ transitions byteToTransitionSET(unsigned char byte, unsigned char *buf,
                                 state curr_state);
 transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
                                state curr_state, bool isRecv);
-transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
-                              state curr_state);
+transitions byteToTransitionI(unsigned char byte, state curr_state);
 transitions byteToTransitionRR(unsigned char byte, unsigned char *buf,
                                state curr_state);
 transitions byteToTransitionDISC(unsigned char byte, unsigned char *buf,

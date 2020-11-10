@@ -282,8 +282,7 @@ transitions byteToTransitionUA(unsigned char byte, unsigned char *buf,
   return transition;
 }
 
-transitions byteToTransitionI(unsigned char byte, unsigned char *buf,
-                              state curr_state) {
+transitions byteToTransitionI(unsigned char byte, state curr_state) {
   transitions transition;
   if (curr_state == CI_ST) { // && byte == calcBCCField(buf)) {
     // TODO mandar REJ?
@@ -523,7 +522,7 @@ int getFrame(struct linkLayer *linkLayer, int fd, unsigned char **buffer) {
       return -2;
     }
 
-    transition = byteToTransitionI(currByte, buf->data, curr_state);
+    transition = byteToTransitionI(currByte, curr_state);
     curr_state = state_machine[curr_state][transition];
 
     if (curr_state == START_ST) {
@@ -609,10 +608,8 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
 #ifdef INTROERR
   int div = 5;
   int r = 0;
-  if ((rand() % div) == 0) {
-	r = 1;
-	fprintf(stderr, "Int Error\n");
-  }
+  if ((rand() % div) == 0)
+    r = 1;
   fillByteField(linkLayer->frame->data, BCC_FIELD,
                 linkLayer->frame->data[BCC_FIELD] + r);
 #endif
@@ -628,13 +625,11 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
     transitions transition;
 
 #ifdef INTROERR
-  r = 0;
-  if ((rand() % div) == 0) {
-	r = 1;
-	fprintf(stderr, "Int Error\n");
-  }
-  fillByteField(linkLayer->frame->data, BCC_FIELD,
-                linkLayer->frame->data[BCC_FIELD] + r);
+    r = 0;
+    if ((rand() % div) == 0)
+      r = 1;
+    fillByteField(linkLayer->frame->data, BCC_FIELD,
+                  linkLayer->frame->data[BCC_FIELD] + r);
 #endif
     while (curr_state != STOP_ST) {
       res = read(fd, &currByte, sizeof(unsigned char));
@@ -677,13 +672,11 @@ int sendFrame(struct linkLayer *linkLayer, int fd, unsigned char *packet,
       // reset attempts (we got an answer) and resend
 
 #ifdef INTROERR
-  r = -1;
-  if ((rand() % div) == 0) {
-	r = 0;
-	fprintf(stderr, "Int Error\n");
-  }
-  fillByteField(linkLayer->frame->data, BCC_FIELD,
-                linkLayer->frame->data[BCC_FIELD] + r);
+      r = -1;
+      if ((rand() % div) == 0)
+        r = 0;
+      fillByteField(linkLayer->frame->data, BCC_FIELD,
+                    linkLayer->frame->data[BCC_FIELD] + r);
 #endif
 
       ++linkLayer->stats.resent;

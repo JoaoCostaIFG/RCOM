@@ -8,7 +8,7 @@
 \usepackage{xcolor}
 \lstset {
     language=C,
-    backgroundcolor=\color{black!5}, % set backgroundcolor
+    backgroundcolor=\color{black!12}, % set backgroundcolor
     basicstyle=\footnotesize, % basic font setting
 }
 
@@ -150,7 +150,20 @@ struct linkLayer {
   unsigned int sequenceNumber;   /* Numero de sequencia da trama: 0, 1*/
   unsigned int timeout;          /* Valor do temporizador, e.g.: 1 sec */
   unsigned int numTransmissions; /* Numero de retransmissoes em caso de falha */
-  vector *frame;
+  vector *frame;                 /* last sent frame */
+  struct linkStats stats;        /* connection statistics */
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+struct linkStats {
+  unsigned int sent;          /* total number of sent frames */
+  unsigned int resent;        /* number of resent frames */
+  unsigned int received;      /* total number of received frames */
+  unsigned int RRs;           /* number of RRs sent */
+  unsigned int REJs;          /* number of REJs sent */
+  struct timespec start_time; /* time at which the connection started */
+  struct timespec end_time;   /* time at which the connection ended */
 };
 \end{lstlisting}
 
