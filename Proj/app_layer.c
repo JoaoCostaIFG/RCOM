@@ -305,11 +305,18 @@ int receiveFile(struct applicationLayer *appLayer, unsigned char **res) {
 
 void write_file(struct applicationLayer *appLayer,
                 unsigned char *file_content) {
+  /*
+   * struct stat st;
+   * if (stat("out/", &st) == -1) {
+   *   mkdir("out", 0770);
+   * }
+   */
+
   char out_file[512];
   if (strcmp(appLayer->file_name, "")) { // not empty
     stpcpy(out_file, appLayer->file_name);
   } else {
-    strcpy(out_file, "out/");
+    strcpy(out_file, "");
     char *file_name;
     int file_name_size = getStartPacketFileName(&file_name);
     strncat(out_file, file_name, file_name_size);
