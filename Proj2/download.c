@@ -13,6 +13,7 @@
 #define FTP_PORT 21
 #define ACK 0
 #define NACK 1
+#define DEBUG
 
 struct ConnectionObj {
   char hostname[256];
@@ -59,9 +60,10 @@ struct hostent *resolveHostName(char *hostname) {
 
 int isUrlValid(char *url) {
   regex_t regex;
+              /* "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?[^!*'();:@&=+$,/?%#]*(/[^/" */
+              /* "]+)+/?$", */
   if (regcomp(&regex,
-              "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?[^!*'();:@&=+$,/?%#]*(/[^/"
-              "]+)+/?$",
+              "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?.*(/.*)*$",
               REG_EXTENDED) != 0) {
     perror("regcomp()");
     exit(1);
@@ -181,8 +183,8 @@ int loginFTP(int sockfd, struct ConnectionObj *conObj) {
 }
 
 int goPasvFTP(int sockfd, struct ConnectionObj *conObj) {
-  char msg[50];
-  if (sendFTPCmd(sockfd, "PASV\n", msg, 50) == NACK)
+  char msg[100];
+  if (sendFTPCmd(sockfd, "PASV\n", msg, 100) == NACK)
     return NACK;
 
   *(strchr(msg, ')')) = ',';
@@ -293,9 +295,12 @@ int getFTPFileData(struct ConnectionObj *conObj) {
 int getFTPFile(struct ConnectionObj *conObj) {
   char cmd[262];
 
-  snprintf(cmd, 262, "CWD %s\n", conObj->dirname);
-  if (sendFTPCmd(conObj->ctrl_sock, cmd, NULL, 0) == NACK)
-    return NACK;
+  if (strlen(conObj->dirname) > 0) { // dir exists
+    snprintf(cmd, 262, "CWD %s\n", conObj->dirname);
+    if (sendFTPCmd(conObj->ctrl_sock, cmd, NULL, 0) == NACK)
+      return NACK;
+  }
+
   snprintf(cmd, 262, "RETR %s\n", conObj->filename);
   if (sendFTPCmd(conObj->ctrl_sock, cmd, NULL, 0) == NACK)
     return NACK;
@@ -333,7 +338,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (getFTPFile(&conObj)) {
-    fprintf(stderr, "getFTPFile(): failed to get the file %s/%s",
+    fprintf(stderr, "getFTPFile(): failed to get the file %s/%s\n",
             conObj.dirname, conObj.filename);
     exit(1);
   }
