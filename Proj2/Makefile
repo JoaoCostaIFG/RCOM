@@ -5,7 +5,8 @@ OBJ = ${SRC:.c=.o}
 # compiler and linker
 CC = gcc
 # flags
-CFLAGS = -g -Wall -Wextra
+# CFLAGS = -g
+CFLAGS = -Wall -Wextra
 # CFLAGS += -DDEBUG
 
 all: options download

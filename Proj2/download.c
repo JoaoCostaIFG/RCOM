@@ -34,11 +34,10 @@ struct ConnectionObj {
  */
 void printUrlParse(struct ConnectionObj *conObj) {
   // TODO empty field => <empty> or <none>
-  printf(
-      "##############################\n# User: %s\n# Pass: %s\n# Hostname: "
-      "%s\n# Dirname: %s\n# Filename: %s\n##############################\n",
-      conObj->user, conObj->pass, conObj->hostname, conObj->dirname,
-      conObj->filename);
+  printf("##############################\n# User: %s\n# Pass: %s\n# Hostname: "
+         "%s\n# Dirname: %s\n# Filename: %s\n##############################\n",
+         conObj->user, conObj->pass, conObj->hostname, conObj->dirname,
+         conObj->filename);
 }
 
 void printUsage(void) {
@@ -185,7 +184,7 @@ int goPasvFTP(int sockfd, struct ConnectionObj *conObj) {
   if (sendFTPCmd(sockfd, "PASV\n", msg, 50) == NACK)
     return NACK;
 
-  *(strchr(msg, ')')) = ',';
+  *(strchr(msg, ')')) = ','; /* (h1,h2,h3,h4,p1,p2). */
   char num[6][4]; /* h1,h2,h3,h4,p1,p2, */
   for (char *i = strchr(msg, '(') + 1, j = 0; i != strchr(msg, '.'); ++i, ++j) {
     char *next_comma = strchr(i, ',');
@@ -196,8 +195,8 @@ int goPasvFTP(int sockfd, struct ConnectionObj *conObj) {
   }
 
   conObj->port = strtol(num[4], NULL, 10) * 256 + strtol(num[5], NULL, 10);
-  printf("# Our IP: %s.%s.%s.%s\n# Server data port: %d\n", num[0], num[1], num[2],
-         num[3], conObj->port);
+  printf("# Our IP: %s.%s.%s.%s\n# Server data port: %d\n", num[0], num[1],
+         num[2], num[3], conObj->port);
 
   return ACK;
 }
