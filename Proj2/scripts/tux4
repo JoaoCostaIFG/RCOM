@@ -3,6 +3,8 @@
 
 y="6"
 
+/etc/init.d/networking restart
+
 ifconfig eth0 172.16.${y}0.254/24
 ifconfig eth1 172.16.${y}1.253/24
 
