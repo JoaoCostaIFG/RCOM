@@ -1,0 +1,39 @@
+#router
+
+# clean config
+enable
+copy flash:gnu6-clean startup-config
+reload
+
+# configure terminal
+# interface fastethernet 0/0
+# ip address 172.16.2.69 255.255.255.0
+# no shutdown
+# show interface fastethernet 0/0
+
+# inside
+conf t 
+interface fastethernet 0/0
+ip address 172.16.y1.254 255.255.255.0 
+no shutdown 
+ip nat inside 
+exit 
+
+# outside
+interface fastethernet 0/1
+ip address 172.16.2.y9 255.255.255.0 
+no shutdown 
+ip nat outside 
+exit 
+
+# nat
+ip nat pool ovrld 172.16.2.y9 172.16.2.y9 prefix 24 
+ip nat inside source list 1 pool ovrld overload 
+
+# ips permitidos
+access-list 1 permit 172.16.y0.0 0.0.0.7 
+access-list 1 permit 172.16.y1.0 0.0.0.7 
+
+# routes
+ip route 0.0.0.0 0.0.0.0 172.16.2.254 
+ip route 172.16.y0.0 255.255.255.0 172.16.y1.253 

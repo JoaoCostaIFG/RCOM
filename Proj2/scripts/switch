@@ -1,0 +1,45 @@
+#switch
+
+enable
+copy flash:gnu6-clean startup-config
+
+# create vlans
+configure terminal
+vlan y0
+end
+
+configure terminal
+vlan y1
+end
+
+# ports vlan 0
+configure terminal 
+interface fastethernet 0/3
+switchport mode access
+switchport por access vlan y0
+end
+
+configure terminal 
+interface fastethernet 0/4
+switchport mode access
+switchport por access vlan y0
+end
+
+# ports vlan 1
+configure terminal 
+interface fastethernet 0/2
+switchport mode access
+switchport por access vlan y1
+end
+
+configure terminal 
+interface fastethernet 0/5
+switchport mode access
+switchport por access vlan y1
+end
+
+configure terminal 
+interface fastethernet 0/13
+switchport mode access
+switchport por access vlan y1
+end

@@ -1,0 +1,10 @@
+#/bin/sh
+#tux3
+
+y="6"
+
+ifconfig eth0 172.16.${y}0.1/24
+
+route add -net 172.16.${y}1.0/24 gw 172.16.${y}0.254 dev eth0
+
+route add default gw 172.16.${y}0.254

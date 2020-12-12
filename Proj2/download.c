@@ -149,9 +149,15 @@ int getFTPState(int sockfd, char *msg, int max_size) {
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "\t%s", response);
+    /* fprintf(stderr, "\t%s", response); */
+    fprintf(stderr, "\nAAAAAAAAAAAA%sAAAAAAAAAAAAA\n", response);
     fflush(stderr);
 #endif
+
+    char* abc = strrchr(response, '\n');
+    abc = strrchr(abc, '\n');
+    printf("BBBBBBBBBBBBBBBBBBBB%sBBBBBBBBBBBBBBBBBB\n", abc);
+
     if ('1' <= response[0] && response[0] <= '3')
       ans = ACK;
     else
