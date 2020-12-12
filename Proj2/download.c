@@ -13,7 +13,7 @@
 #define FTP_PORT 21
 #define ACK 0
 #define NACK 1
-#define DEBUG
+/* #define DEBUG */
 
 struct ConnectionObj {
   char hostname[256];
@@ -59,10 +59,7 @@ struct hostent *resolveHostName(char *hostname) {
 
 int isUrlValid(char *url) {
   regex_t regex;
-              /* "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?[^!*'();:@&=+$,/?%#]*(/[^/" */
-              /* "]+)+/?$", */
-  if (regcomp(&regex,
-              "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?.*(/.*)*$",
+  if (regcomp(&regex, "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?.*(/[^/]+)+/?$",
               REG_EXTENDED) != 0) {
     perror("regcomp()");
     exit(1);
@@ -132,7 +129,7 @@ int parseUrl(char *url, struct ConnectionObj *conObj) {
  */
 int getFTPState(int sockfd, char *msg, int max_size) {
   int read_ret, ans = NACK, curr_size = 0;
-  char response[256]; // TODO maybe 4 is ok
+  char response[256], code[4]; // TODO maybe code 4 is ok
   if (max_size > 0)
     strcpy(msg, "");
 
@@ -149,20 +146,42 @@ int getFTPState(int sockfd, char *msg, int max_size) {
     }
 
 #ifdef DEBUG
-    /* fprintf(stderr, "\t%s", response); */
-    fprintf(stderr, "\nAAAAAAAAAAAA%sAAAAAAAAAAAAA\n", response);
+    fprintf(stderr, "\t%s", response);
     fflush(stderr);
 #endif
 
-    char* abc = strrchr(response, '\n');
-    abc = strrchr(abc, '\n');
-    printf("BBBBBBBBBBBBBBBBBBBB%sBBBBBBBBBBBBBBBBBB\n", abc);
+    // this block is here to solve the problem of reading multiple lines at
+    // the same time. We could also read the lines byte-by-byte until we find
+    // a new line character, but that would be inefficient
+    if (response[3] == ' ') {
+      // if we have a space after the code, we're done
+      memcpy(code, response, sizeof(char) * 4);
+    } else {
+      // otherwise we go through the whole response until and store the last
+      // code we find.
+      // Note: it would be better if we checked from the end of the response.
+      char *line = strchr(response, '\n');
+      while (line != NULL) {
+        if (strlen(line) > 5) { // can contain a code: '\n' + 3n + (' ' || '-')
+          char *skipNewLine = line + 1;
+          if (skipNewLine[0] >= '0' && skipNewLine[0] <= '9' &&
+              skipNewLine[1] >= '0' && skipNewLine[1] <= '9' &&
+              skipNewLine[2] >= '0' && skipNewLine[2] <= '9' &&
+              (skipNewLine[3] == ' ' || skipNewLine[3] == '-')) {
+            // 3 numbers and a ' ' or '-' means this is a full message
+            memcpy(code, skipNewLine, sizeof(char) * 4);
+            /* break; */
+          }
+        }
+        line = strchr(line + 1, '\n');
+      }
+    }
 
-    if ('1' <= response[0] && response[0] <= '3')
+    if ('1' <= code[0] && code[0] <= '3')
       ans = ACK;
     else
       ans = NACK;
-  } while (response[3] != ' '); // '-' when multiline, ' ' when last/single
+  } while (code[3] != ' '); // '-' when multiline, ' ' when last/single
 
   return ans;
 }
@@ -193,7 +212,7 @@ int goPasvFTP(int sockfd, struct ConnectionObj *conObj) {
     return NACK;
 
   *(strchr(msg, ')')) = ','; /* (h1,h2,h3,h4,p1,p2). */
-  char num[6][4]; /* h1,h2,h3,h4,p1,p2, */
+  char num[6][4];            /* h1,h2,h3,h4,p1,p2, */
   for (char *i = strchr(msg, '(') + 1, j = 0; i != strchr(msg, '.'); ++i, ++j) {
     char *next_comma = strchr(i, ',');
     int ind;
@@ -202,7 +221,7 @@ int goPasvFTP(int sockfd, struct ConnectionObj *conObj) {
     num[(int)j][ind] = '\0';
   }
 
-  conObj->port = strtol(num[4], NULL, 10) * 256 + strtol(num[5], NULL, 10);
+  conObj->port = (strtol(num[4], NULL, 10) << 8) + strtol(num[5], NULL, 10);
   printf("# Our IP: %s.%s.%s.%s\n# Server data port: %d\n", num[0], num[1],
          num[2], num[3], conObj->port);
 
