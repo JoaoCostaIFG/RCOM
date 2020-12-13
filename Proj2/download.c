@@ -59,7 +59,7 @@ struct hostent *resolveHostName(char *hostname) {
 
 int isUrlValid(char *url) {
   regex_t regex;
-  if (regcomp(&regex, "^ftp://((a-zA-Z0-9)+:(a-zA-Z0-9)*@)?.*(/[^/]+)+/?$",
+  if (regcomp(&regex, "^ftp://([a-zA-Z0-9]+:[a-zA-Z0-9]*@)?.*(/[^/]+)+/?$",
               REG_EXTENDED) != 0) {
     perror("regcomp()");
     exit(1);
