@@ -30,6 +30,37 @@ struct ConnectionObj {
   int data_sock;
 };
 
+void drawProgress(float currPerc, int divs, int isRedraw) {
+  static int prev_full = -1;
+  int full = (int)(currPerc * divs);
+  if (full < 0)
+    full = 0;
+  else if (full > divs)
+    full = divs;
+
+  if (full == prev_full)
+    return;
+  prev_full = full;
+
+  /* draw */
+  if (isRedraw) {
+    for (int i = 0; i < divs + 10; ++i)
+      printf("\b");
+  }
+
+  printf("[");
+  for (int i = 0; i < full; ++i)
+    printf("-");
+  printf("\33\[33m\33\[1m");
+  printf(full % 2 == 0 ? "C" : "c");
+  printf("\33\[0m");
+  for (int i = full + 1; i < divs; ++i)
+    printf(i % 2 == 0 ? "o" : " ");
+  printf("] %.2f%%", currPerc * 100);
+
+  fflush(stdout);
+}
+
 /*
  *  URL
  */
@@ -300,24 +331,33 @@ int startDataFTPCon(struct ConnectionObj *conObj) {
   return 0;
 }
 
-int getFTPFileData(struct ConnectionObj *conObj) {
+int getFTPFileData(struct ConnectionObj *conObj, long file_size) {
+  drawProgress(0, 50, 1);
+
   FILE *fp;
   if ((fp = fopen(conObj->filename, "w")) == NULL)
     return NACK;
   unsigned char d[256];
 
+  long curr_size = 0;
   int read_ret = read(conObj->data_sock, d, 256);
+  curr_size += read_ret;
+  drawProgress((float)curr_size / file_size, 50, 1);
   while (read_ret > 0) {
     fwrite(d, sizeof(unsigned char), read_ret, fp);
     read_ret = read(conObj->data_sock, d, 256);
+    curr_size += read_ret;
+    drawProgress((float)curr_size / file_size, 50, 1);
   }
 
   fclose(fp);
+  drawProgress(100, 50, 1);
+  puts("");
   return getFTPState(conObj->ctrl_sock, NULL, 0);
 }
 
 int getFTPFile(struct ConnectionObj *conObj) {
-  char cmd[262];
+  char cmd[262], ans[500] = "";
 
   if (strlen(conObj->dirname) > 0) { // dir exists
     snprintf(cmd, 262, "CWD %s\n", conObj->dirname);
@@ -326,10 +366,20 @@ int getFTPFile(struct ConnectionObj *conObj) {
   }
 
   snprintf(cmd, 262, "RETR %s\n", conObj->filename);
-  if (sendFTPCmd(conObj->ctrl_sock, cmd, NULL, 0) == NACK)
+  if (sendFTPCmd(conObj->ctrl_sock, cmd, ans, 499) == NACK)
     return NACK;
 
-  if (getFTPFileData(conObj) == NACK)
+  // parse file size
+  char *num_parse_pointer = strrchr(ans, '(') + 1;
+  int size = 0;
+  while (*(num_parse_pointer + size) != ' ')
+    ++size;
+
+  char file_size_str[32];
+  strncpy(file_size_str, num_parse_pointer, size);
+  long file_size = strtol(file_size_str, NULL, 10);
+
+  if (getFTPFileData(conObj, file_size) == NACK)
     return NACK;
 
   return ACK;
