@@ -13,7 +13,7 @@
 #define FTP_PORT 21
 #define ACK 0
 #define NACK 1
-/* #define DEBUG */
+#define DEBUG
 
 struct ConnectionObj {
   char hostname[256];
@@ -253,7 +253,7 @@ int goPasvFTP(int sockfd, struct ConnectionObj *conObj) {
   }
 
   conObj->port = (strtol(num[4], NULL, 10) << 8) + strtol(num[5], NULL, 10);
-  printf("# Our IP: %s.%s.%s.%s\n# Server data port: %d\n", num[0], num[1],
+  printf("# Server IP: %s.%s.%s.%s\n# Server data port: %d\n", num[0], num[1],
          num[2], num[3], conObj->port);
 
   return ACK;
