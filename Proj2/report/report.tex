@@ -1,0 +1,75 @@
+\documentclass[11pt]{report}
+
+\usepackage{graphicx} % Add pictures to your document
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{pgfplots}
+\usepackage{sectsty}
+
+\begin{document}
+
+\title{\huge{\textbf{RCOM Lab2}} \\ Turma 3 // Grupo 3 \\ RCOM 2020/2021 \\ MIEIC FEUP}
+\author{João de Jesus Costa \\ \texttt{up201806560} \and
+	João Lucas Silva Martins \\ \texttt{up201806436}}
+\date{\today{}}
+
+\begin{figure}[b]
+  \begin{center}
+    \includegraphics[width=0.6\textwidth]{feup_logo.png}
+  \end{center}
+\end{figure}
+\maketitle{}
+
+\tableofcontents{}
+\newpage
+
+\chapter{Summary}
+
+This report documents the project that was developed for the curricular unit
+of RCOM (FEUP). We implemented a simple FTP download application and configured
+a computer network with three computers, a commercial router and switch.
+
+\chapter{Introduction}
+
+In the first part of this report, we'll focus on the FTP download application
+and its architecture.\\
+In the second part of this report, we'll focus on the network configuration
+and analyze it.
+
+\chapter{Part 1 - Download application}
+
+\section{Architecture}
+
+The application works linearly. We start by opening a socket to the given
+server (on the standard FTP port: 21) and authenticate the user. This is
+the \textbf{control socket}.\\
+After the authentication process, we enter passive mode (with the PASV
+command) and open a second socket to the server on the port replied on
+the PASV command. This is the \textbf{data socket}.
+
+Once we have this two sockets open, we just need to request the file
+we want to the control socket and read it from the data socket. If any
+of the steps described fails, the execution is aborted and the user is
+informed of the error.
+
+\section{Download steps}
+\begin{enumerate}
+\item Parse the url and authentication information
+\item Resolve the hostname
+\item Open control socket to server
+\item Authenticate
+\item Enter passive mode
+\item Open data socket to server
+\item Request file on control socket
+\item Read file from the data socket
+\end{enumerate}
+
+\chapter{Part 2 - Network configuration and analysis}
+
+\chapter{Conclusions}
+
+\chapter{References}
+
+\chapter{Annexes}
+
+\end{document}
