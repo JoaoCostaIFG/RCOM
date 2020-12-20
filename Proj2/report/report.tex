@@ -7,6 +7,8 @@
 \usepackage{pgfplots}
 \usepackage{sectsty}
 
+\newcommand{\tux}[1]{\textbf{Tux#1}}
+
 \begin{document}
 
 \title{\huge{\textbf{RCOM Lab2}} \\ Turma 3 // Grupo 3 \\ RCOM 2020/2021 \\ MIEIC FEUP}
@@ -96,8 +98,8 @@ a host can find the MAC address of a host they only know the IP address of.
 ARP request packets contain the IP and MAC address of the sender host and the IP
 address of the destination host. ARP reply packets include the destination
 host's MAC address and are sent back to the source machine.\\
-For example, \textbf{Tux3} sent an ARP packet asking who has the IP address
-\textit{172.16.60.254}. The reply was sent by \textbf{Tux4} who had that IP address.
+For example, \tux{3} sent an ARP packet asking who has the IP address
+$172.16.60.254$. The reply was sent by \tux{4} who had that IP address.
 
 \paragraph{What packets does the ping command generate?}
 The ping command generates ICMP ECHO\_REQUEST packet and expect
@@ -107,10 +109,10 @@ ICMP ECHO\_RESPONSE packet from a host or gateway.
 On the request ping packets, the IP and MAC addresses of the source correspond
 to the source host's and the IP and MAC addresses of the destination correspond
 to the destination host's. These switch places in the reply packet.\\
-For example, \textbf{Tux3} sent a ping to the IP address \textit{172.16.60.254}
-which corresponds to \textbf{Tux4}. The source IP and MAC addresses are
-\textit{172.16.60.1} and \textit{00:21:5a:61:2d:df} respectively and the destination
-IP and MAC addresses are \textit{172.16.60.254} and \textit{00:21:5a:5a:79:97}
+For example, \tux{3} sent a ping to the IP address $172.16.60.254$
+which corresponds to \tux{4}. The source IP and MAC addresses are
+$172.16.60.1$ and $00:21:5a:61:2d:df$ respectively and the destination
+IP and MAC addresses are $172.16.60.254$ and $00:21:5a:5a:79:97$
 on the request packet.
 
 \paragraph{How to determine if a receiving Ethernet frame is ARP, IP, ICMP?}
@@ -128,11 +130,192 @@ determined by determining the length of the encapsulated packet.
 
 \paragraph{What is the loopback interface and why is it important?}
 The loopback network specified by the IP protocol has the (IPv4) address
-\textit{127.0.0.0/8}. On most IP implementations, any traffic sent to this network
+$127.0.0.0/8$. On most IP implementations, any traffic sent to this network
 is routed to the same computer. The most commonly used IP address for the
-loopback interface is \textit{127.0.0.1} for IPv4 and \textit{::1} for IPv6.\\
+loopback interface is $127.0.0.1$ for IPv4 and $::1$ for IPv6.\\
 This interface is useful to test and/or run client-server application/services
 on the local machine.
+
+\section{Experience 2 - Implement two virtual LANs in a switch}
+
+\subsection{Objectives}
+Connect two hosts to a local network (switch) and enable communication between
+them.
+
+\subsection{Configuration commands}
+\begin{lstlisting}
+# on tux2
+ifconfig eth0 172.16.61.1/24
+\end{lstlisting}
+
+\paragraph{How to configure vlan y0?}
+\begin{lstlisting}
+configure terminal
+vlan y0
+end
+
+configure terminal 
+interface fastethernet 0/3
+switchport mode access
+switchport por access vlan y0
+end
+
+configure terminal 
+interface fastethernet 0/4
+switchport mode access
+switchport por access vlan y0
+end
+\end{lstlisting}
+
+\paragraph{How many broadcast domains are there? How can you conclude it from the logs?}
+There are two broadcast domains, one for each network (vlan):
+$172.16.60.255/24$, $172.16.61.255/24$. If we look at the logs
+\textit{exp2\_2\_tux2.pacpng}, \textit{exp2\_2\_tux3.pacpng} and \textit{exp2\_2\_tux4.pacpng},
+we can see that when \tux{3} pinged the broadcast of vlan y0, only \tux{4}
+got the ping packets. This means that \tux{2} is in a different network, which
+has its own broadcast domain.
+
+\section{Experience 3 - Configure a router in Linux}
+
+\subsection{Objectives}
+Configure a computer running Linux to act as a router for two networks (vlans).
+
+\subsection{Configuration commands}
+\begin{lstlisting}
+# on tux2
+route add -net 172.16.60.0/24 gw 172.16.61.253 dev eth0
+
+# on tux 3
+route add -net 172.16.61.0/24 gw 172.16.60.254 dev eth0
+
+# on tux4
+ifconfig eth1 172.16.61.253/24
+echo 1 > /proc/sys/net/ipv4/ip_forward
+echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+\end{lstlisting}
+
+\paragraph{What routes are there in the tuxes? What are their meanings?}
+On \tux{2} we have 2 routes: the local network route whose gateway is
+$0.0.0.0$ and the route to the \textbf{vlan y0} whose gateway is
+\textbf{Tux4's eth1} (IP address $172.16.61.253$). This means \tux{2}
+is in \textbf{vlan y1} and needs to send its packets to \tux{4}
+when it wants to communicate to \textbf{vlan y0}.\\
+On \tux{3} we have 2 routes: the local network route whose gateway is
+$0.0.0.0$ and the route to the \textbf{vlan y1} whose gateway is
+\textbf{Tux4's eth0} (IP address $172.16.60.254$). This means \tux{3}
+is in \textbf{vlan y0} and needs to send its packets to \tux{4}
+when it wants to communicate to \textbf{vlan y1}.
+On \tux{4} we have 2 routes. Each route corresponds to one local network.
+We have two because \tux{4} is in two vlans: y0 and y1.
+
+\paragraph{What information does an entry of the forwarding table contain?}
+The table contains gateways and host/networks. Packets destined to a certain host,
+are routed to the respective gateway. The gateway might not be directly connected
+to the destination, but the host is always directly connected to the gateway.\\
+The routes chosen to be in this table are the ones with the best metrics (decided
+by the routing algorithm used). This optimizes the connections.
+
+\paragraph{What ARP messages, and associated MAC addresses, are observed and why?}
+When the ARP tables of the 3 hosts are clean and \tux{3} pings \tux{2}, we see the
+following ARP messages:
+\begin{itemize}
+  \item \tux{3} asks \tux{4} for his MAC address ($00:21:5a:5a:79:97$), because the
+    ping to \tux{2} needs to be routed through \tux{4}.
+  \item \tux{4} asks \tux{3} for his MAC address ($00:21:5a:61:2d:df$), because the
+    reply to the ping needs to be delivered (it's routed by this host).
+  \item \tux{4} asks \tux{2} for his MAC address ($00:22:64:19:02:ba$), because the
+    ping destination is \tux{2}.
+  \item \tux{2} asks \tux{4} for his MAC address ($00:08:54:71:73:da$), because the
+    ping needs to have a reply routed by \tux{4} (to \tux{3}).
+\end{itemize}
+
+\paragraph{What ICMP packets are observed and why?}
+On the same situation described on the previous answer, we can observe the ICMP packet
+(ping) from \tux{3} arriving at \tux{2}. These packets can be seen on both interfaces
+of \tux{4} because it routes them from one network to the other.
+
+\paragraph{What are the IP and MAC addresses associated to ICMP packets and why?}
+During the transmission, the IP addresses are fixed, because they are part of the
+network layer. However, the MAC addresses reflect the hops taken by the packet
+through the network. For example, when \tux{3} pings \tux{2}, the source MAC address
+is the MAC address of \tux{3} and the destination MAC address is the MAC address
+of \textbf{Tux4's eth0} on the first hop. On the second hop, the source MAC address
+is the address of \textbf{Tux4's eth1} and the destination address is the address of
+\tux{2}.
+
+\section{Experience 4 - Configure a Commercial Router and Implement NAT}
+
+\subsection{Objectives}
+Add a commercial router to the network and configure it to use NAT.
+
+\subsection{Configuration commands}
+\begin{lstlisting}
+# on tux2
+route add default gw 172.16.61.254
+
+# on tux 3
+route add default gw 172.16.60.254
+
+# on tux 4
+route add default gw 172.16.61.254
+\end{lstlisting}
+
+\paragraph{How to configure a static route in a commercial router?}
+We use the command $ip route Destination Mask Gateway$, e.g.:
+$ip route 172.16.61.1 255.255.255.0 172.16.2.69$.
+
+\paragraph{What are the paths followed by the packets in the experiments carried out and why?}
+
+\paragraph{How to configure NAT in a commercial router?}
+\begin{lstlisting}
+# inside
+conf t 
+interface fastethernet 0/0
+ip address 172.16.61.254 255.255.255.0 
+no shutdown 
+ip nat inside 
+exit 
+
+# outside
+interface fastethernet 0/1
+ip address 172.16.2.69 255.255.255.0 
+no shutdown 
+ip nat outside 
+exit 
+
+# nat
+ip nat pool ovrld 172.16.2.69 172.16.2.69 prefix 24 
+ip nat inside source list 1 pool ovrld overload 
+
+# ips permitidos
+access-list 1 permit 172.16.60.0 0.0.0.7 
+access-list 1 permit 172.16.61.0 0.0.0.7 
+
+# routes
+ip route 0.0.0.0 0.0.0.0 172.16.2.254 
+ip route 172.16.60.0 255.255.255.0 172.16.61.253 
+\end{lstlisting}
+
+\paragraph{What does NAT do?}
+NAT translates the IP addresses of a private network to a public IP address.
+Each private IP address and private port pair is mapped to a public IP address
+and public port on the device holding the public IP address. In our case this
+public IP address is always $172.16.2.69$.\\
+This mapping is bidirectional and stored in the NAT mapping table. Each packet
+arriving at the router from `outside' is translated according to the table
+and sent to the correct network/host.\\
+It should be noted that only allowed private IP addresses can be mapped and that
+new entries are added to the NAT table as needed.
+
+
+
+
+
+
+
+
+
+
 
 \chapter{Conclusions}
 

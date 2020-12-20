@@ -5,12 +5,6 @@ enable
 copy flash:gnu6-clean startup-config
 reload
 
-# configure terminal
-# interface fastethernet 0/0
-# ip address 172.16.2.69 255.255.255.0
-# no shutdown
-# show interface fastethernet 0/0
-
 # inside
 conf t 
 interface fastethernet 0/0
