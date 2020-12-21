@@ -64,7 +64,7 @@ After the authentication process, we enter passive mode (with the PASV
 command) and open a second socket to the server on the port replied on
 the PASV command. This is the \textbf{data socket}.
 
-Once we have this two sockets open, we just need to request the file
+Once both sockets are open, we just need to request the file
 we want to the control socket and read it from the data socket. If any
 of the steps described fails, the execution is aborted and the user is
 informed of the error.
