@@ -396,9 +396,24 @@ TCP connection using a four-way handshake.
 
 \paragraph{How does the ARQ TCP mechanism work? What are the relevant TCP fields?
 What relevant information can be observed in the logs?}
+The ARQ TCP mechanism uses the sliding window method to transmit more than one
+packet while still waiting for the receiver's confirmation. This is achieved
+by storing the last ACKED packet and using it to calculate the size of the
+current send buffer. If it surpasses the maximum size of the window,
+the sender blocks, waiting for an ACK from the receiver. The wait may be
+interrupted by a timeout, with variable length, in which case the sender
+attempts to re-transmit the last non-ACKED sent packet.\\
+The relevant TCP fields are the window size, the source and destination ports,
+the acknowledgment number and the sequence number.\\
+In the logs we can verify that the connection establishment (three-way
+handshake process) are the first packets in both TCP connections. During
+the entire data phase the window size used by the FTP server is mostly
+small (229 or 510 bytes), due to the small packet length . However,
+during the actual data transfer, the window size rises as expected
+to values of 32768 bytes. We can also conclude that there were no timeouts.
 
 \paragraph{How does the TCP congestion control mechanism work? What are the
-relevant fields. How did the throughput of the data connection evolve along
+relevant fields? How did the throughput of the data connection evolve along
 the time? Is it according the TCP congestion control mechanism?}
 
 \paragraph{Is the throughput of a TCP data connections disturbed by the

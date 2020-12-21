@@ -15,6 +15,9 @@
 #define NACK 1
 #define DEBUG
 
+// max ethernet packet size
+#define MAXPACKETSIZE 1500
+
 struct ConnectionObj {
   char hostname[256];
   char user[256];
@@ -337,15 +340,15 @@ int getFTPFileData(struct ConnectionObj *conObj, long file_size) {
   FILE *fp;
   if ((fp = fopen(conObj->filename, "w")) == NULL)
     return NACK;
-  unsigned char d[256];
+  unsigned char d[MAXPACKETSIZE];
 
   long curr_size = 0;
-  int read_ret = read(conObj->data_sock, d, 256);
+  int read_ret = read(conObj->data_sock, d, MAXPACKETSIZE);
   curr_size += read_ret;
   drawProgress((float)curr_size / file_size, 50, 1);
   while (read_ret > 0) {
     fwrite(d, sizeof(unsigned char), read_ret, fp);
-    read_ret = read(conObj->data_sock, d, 256);
+    read_ret = read(conObj->data_sock, d, MAXPACKETSIZE);
     curr_size += read_ret;
     drawProgress((float)curr_size / file_size, 50, 1);
   }
