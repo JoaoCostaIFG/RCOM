@@ -1,0 +1,32 @@
+\BOOKMARK [0][-]{chapter.1}{Summary}{}% 1
+\BOOKMARK [0][-]{chapter.2}{Introduction}{}% 2
+\BOOKMARK [0][-]{chapter.3}{Part 1 - Download application}{}% 3
+\BOOKMARK [1][-]{section.3.1}{Architecture}{chapter.3}% 4
+\BOOKMARK [1][-]{section.3.2}{Download steps}{chapter.3}% 5
+\BOOKMARK [1][-]{section.3.3}{Report of a successful download}{chapter.3}% 6
+\BOOKMARK [0][-]{chapter.4}{Part 2 - Network configuration and analysis}{}% 7
+\BOOKMARK [1][-]{section.4.1}{Experience 1 - Configure an IP Network}{chapter.4}% 8
+\BOOKMARK [2][-]{subsection.4.1.1}{Objectives}{section.4.1}% 9
+\BOOKMARK [2][-]{subsection.4.1.2}{Configuration commands}{section.4.1}% 10
+\BOOKMARK [2][-]{subsection.4.1.3}{Questions}{section.4.1}% 11
+\BOOKMARK [1][-]{section.4.2}{Experience 2 - Implement two virtual LANs in a switch}{chapter.4}% 12
+\BOOKMARK [2][-]{subsection.4.2.1}{Objectives}{section.4.2}% 13
+\BOOKMARK [2][-]{subsection.4.2.2}{Configuration commands}{section.4.2}% 14
+\BOOKMARK [2][-]{subsection.4.2.3}{Questions}{section.4.2}% 15
+\BOOKMARK [1][-]{section.4.3}{Experience 3 - Configure a router in Linux}{chapter.4}% 16
+\BOOKMARK [2][-]{subsection.4.3.1}{Objectives}{section.4.3}% 17
+\BOOKMARK [2][-]{subsection.4.3.2}{Configuration commands}{section.4.3}% 18
+\BOOKMARK [2][-]{subsection.4.3.3}{Questions}{section.4.3}% 19
+\BOOKMARK [1][-]{section.4.4}{Experience 4 - Configure a Commercial Router and Implement NAT}{chapter.4}% 20
+\BOOKMARK [2][-]{subsection.4.4.1}{Objectives}{section.4.4}% 21
+\BOOKMARK [2][-]{subsection.4.4.2}{Configuration commands}{section.4.4}% 22
+\BOOKMARK [2][-]{subsection.4.4.3}{Questions}{section.4.4}% 23
+\BOOKMARK [1][-]{section.4.5}{Experience 5 - DNS}{chapter.4}% 24
+\BOOKMARK [2][-]{subsection.4.5.1}{Objectives}{section.4.5}% 25
+\BOOKMARK [2][-]{subsection.4.5.2}{Questions}{section.4.5}% 26
+\BOOKMARK [1][-]{section.4.6}{Experience 6 - TCP connections}{chapter.4}% 27
+\BOOKMARK [2][-]{subsection.4.6.1}{Objectives}{section.4.6}% 28
+\BOOKMARK [2][-]{subsection.4.6.2}{Questions}{section.4.6}% 29
+\BOOKMARK [0][-]{chapter.5}{Conclusions}{}% 30
+\BOOKMARK [0][-]{chapter.6}{References}{}% 31
+\BOOKMARK [0][-]{chapter.7}{Annexes}{}% 32

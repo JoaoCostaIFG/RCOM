@@ -24,7 +24,7 @@ exit
 ip nat pool ovrld 172.16.2.y9 172.16.2.y9 prefix 24 
 ip nat inside source list 1 pool ovrld overload 
 
-# ips permitidos
+# allowed private IP addreses (only until IP 7 on both vlans)
 access-list 1 permit 172.16.y0.0 0.0.0.7 
 access-list 1 permit 172.16.y1.0 0.0.0.7 
 

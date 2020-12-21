@@ -6,6 +6,13 @@
 \usepackage{xcolor}
 \usepackage{pgfplots}
 \usepackage{sectsty}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  filecolor=magenta,      
+  urlcolor=cyan,
+}
 
 \newcommand{\tux}[1]{\textbf{Tux#1}}
 
@@ -88,6 +95,7 @@ ifconfig eth0 172.16.60.1/24
 ifconfig eth0 172.16.60.254/24
 \end{lstlisting}
 
+\subsection{Questions}
 \paragraph{What are the ARP packets and what are they used for?}
 ARP packets contain an IP address and are broadcast in the local network
 (except to the source host). The host whose IP address is listed in the packet
@@ -148,6 +156,7 @@ them.
 ifconfig eth0 172.16.61.1/24
 \end{lstlisting}
 
+\subsection{Questions}
 \paragraph{How to configure vlan y0?}
 \begin{lstlisting}
 configure terminal
@@ -157,13 +166,13 @@ end
 configure terminal 
 interface fastethernet 0/3
 switchport mode access
-switchport por access vlan y0
+switchport access vlan y0
 end
 
 configure terminal 
 interface fastethernet 0/4
 switchport mode access
-switchport por access vlan y0
+switchport access vlan y0
 end
 \end{lstlisting}
 
@@ -194,6 +203,7 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
 \end{lstlisting}
 
+\subsection{Questions}
 \paragraph{What routes are there in the tuxes? What are their meanings?}
 On \tux{2} we have 2 routes: the local network route whose gateway is
 $0.0.0.0$ and the route to the \textbf{vlan y0} whose gateway is
@@ -260,11 +270,47 @@ route add default gw 172.16.60.254
 route add default gw 172.16.61.254
 \end{lstlisting}
 
+\subsection{Questions}
 \paragraph{How to configure a static route in a commercial router?}
 We use the command $ip route Destination Mask Gateway$, e.g.:
 $ip route 172.16.61.1 255.255.255.0 172.16.2.69$.
 
 \paragraph{What are the paths followed by the packets in the experiments carried out and why?}
+\begin{itemize}
+  \item Step 3
+  \begin{itemize}
+    \item \tux{3} pings \tux{4}:\\
+      \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$)
+    \item \tux{3} pings \tux{2}:\\
+      \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
+      \tux{2}($172.16.61.1$)
+    \item \tux{3} pings \textbf{RC}:\\
+      \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
+      \textbf{RC}($172.16.61.254$)
+    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4}
+      (every ping after the first one):\\
+      \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
+  \end{itemize}
+  \item Step 4
+  \begin{itemize}
+    \item \tux{2} pings \tux{3} with redirects disabled and no gateway route to 172.16.60.0/24 via \tux{4}:\\
+      \tux{2}($172.16.61.1$) $\rightarrow$ \textbf{RC}($172.16.61.254$) $\rightarrow$
+      \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
+    \item \tux{2} pings \tux{3} with redirects disabled:\\
+      \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$
+      \tux{3}($172.16.60.1$)
+    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4} (first ping):\\
+      \tux{2}($172.16.61.1$) $\rightarrow$ \textbf{RC}($172.16.61.254$) $\rightarrow$
+      \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
+    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4}
+      (every ping after the first one):\\
+      \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
+  \end{itemize}
+  \item Step 5. \tux{3} pings the router of lab I.320($172.16.2.254$) without NAT: no route
+  \item Step 7. \tux{3} pings the router of lab I.320($172.16.2.254$) with NAT:\\
+    \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
+    \textbf{RC}($172.16.61.254$) $\rightarrow$ \textbf{Router do Lab}($172.16.2.254$)
+\end{itemize}
 
 \paragraph{How to configure NAT in a commercial router?}
 \begin{lstlisting}
@@ -287,7 +333,7 @@ exit
 ip nat pool ovrld 172.16.2.69 172.16.2.69 prefix 24 
 ip nat inside source list 1 pool ovrld overload 
 
-# ips permitidos
+# allowed private IP addreses (only until IP 7 on both vlans)
 access-list 1 permit 172.16.60.0 0.0.0.7 
 access-list 1 permit 172.16.61.0 0.0.0.7 
 
@@ -307,19 +353,75 @@ and sent to the correct network/host.\\
 It should be noted that only allowed private IP addresses can be mapped and that
 new entries are added to the NAT table as needed.
 
+\section{Experience 5 - DNS}
 
+\subsection{Objectives}
+Configure DNS on hosts running Linux so they can resolve domains on the Internet.
 
+\subsection{Questions}
+\paragraph{How to configure the DNS service at an host?}
+We need to edit the file $/etc/resolv.conf$ and add all the IP addresses of the DNS
+servers we want to use.
 
+\paragraph{What packets are exchanged by DNS and what information is transported?}
+There are usually two packets in a DNS exchange. The first is the request packet,
+marking the start of a DNS exchange. It contains the domain name of the requested
+address and the requested record type (among other things). Next, a response packet
+is sent. It includes, among other things, the resolved IP address, assembled
+by a query of a name server using the previously given domain name.
 
+\section{Experience 6 - TCP connections}
 
+\subsection{Objectives}
+Verify connections to the Internet and test the developed FTP download application.
 
+\subsection{Questions}
+\paragraph{How many TCP connections are opened by your ftp application?}
+The FTP application creates two TCP connections. The first is created when connecting
+to the FTP server through port 21 (default FTP port). It is used to send commands
+to the server (e.g.: authentication, entering passive mode, requesting files, etc...)
+and reading their replies.\\
+The second connection is created when we enter passive mode (by sending the \textbf{PASV}
+command to the server). The connection is made to the port replied by the server
+upon entering passive mode. We read file contents through this connection.
 
+\paragraph{In what connection is transported the FTP control information?}
+The FTP control information is transported in the first connection.
 
+\paragraph{What are the phases of a TCP connection?}
+A TCP connection has three phases. The first establishes the connection through
+a three-way handshake process. The second is responsible for the transmission
+of the data. The third and final phase handles the termination of the
+TCP connection using a four-way handshake.
 
+\paragraph{How does the ARQ TCP mechanism work? What are the relevant TCP fields?
+What relevant information can be observed in the logs?}
+
+\paragraph{How does the TCP congestion control mechanism work? What are the
+relevant fields. How did the throughput of the data connection evolve along
+the time? Is it according the TCP congestion control mechanism?}
+
+\paragraph{Is the throughput of a TCP data connections disturbed by the
+appearance of a second TCP connection? How?}
+When a second TCP connection appears, the throughput has to be divided by
+the first and second connections. This means that, depending on how much
+data is being transfered for each connection, the throughput can be divided
+in half.
 
 \chapter{Conclusions}
+The download application developed can download files using the FTP protocol,
+reports errors, supports authentication and always closes the connection
+gracefully.\\
+The network configured allowed us to observe and handle many concepts of
+computer networks: vlans, routing, NAT and DNS. The tests using the download
+application were successful and we were able to download files on the network
+configured.
 
 \chapter{References}
+\begin{itemize}
+  \item \url{https://en.wikipedia.org/wiki/Ethernet_frame}
+  \item \url{https://www.juniper.net/documentation/en_US/junos/topics/concept/interface-security-loopback-understanding.html}
+\end{itemize}
 
 \chapter{Annexes}
 
