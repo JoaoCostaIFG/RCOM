@@ -426,11 +426,11 @@ been achieved.\\
 There are multiple algorithms that specify the amount in which the
 congestion window is to be increased/decreased, the most notable are:
 Increase/Multiplicative Decrease, Slow Start, and Congestion Avoidance.
-The throughput of the data connection remained relatively constant
-during the data transfer, rounding 1368 Bytes per TCP packet. These
-results are in accordance with the TCP congestion control mechanism
-as there were no other connections present. As such, the connection
-remained stable during the data transfer.
+The throughput of the data connection increased linearly until it stabilized around
+$9.3825e7\ bits$ per TCP packet, later decreasing linearly until the connection was closed.
+These results are in accordance with the TCP congestion control mechanism because
+the overall throughput remained stable throughout the data transfer, due to the fact
+that the connection was the only transfer being made in the network.
 
 \paragraph{Is the throughput of a TCP data connections disturbed by the
 appearance of a second TCP connection? How?}
