@@ -59,7 +59,7 @@ After the authentication process, we enter passive mode (with the PASV
 command) and open a second socket to the server on the port replied on
 the PASV command. This is the \textbf{data socket}.
 
-Once we have this two sockets open, we just need to request the file
+Once both sockets are open, we just need to request the file
 we want to the control socket and read it from the data socket. If any
 of the steps described fails, the execution is aborted and the user is
 informed of the error.
@@ -293,9 +293,6 @@ $ip route 172.16.61.1 255.255.255.0 172.16.2.69$.
     \item \tux{3} pings \textbf{RC}:\\
       \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
       \textbf{RC}($172.16.61.254$)
-    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4}
-      (every ping after the first one):\\
-      \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
   \end{itemize}
   \item Step 4
   \begin{itemize}
