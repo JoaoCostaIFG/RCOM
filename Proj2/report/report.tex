@@ -1,5 +1,7 @@
 \documentclass[11pt]{report}
 
+\usepackage[margin=0.45in]{geometry}
+
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{listings}
 \usepackage{float}
@@ -33,20 +35,20 @@
 \tableofcontents{}
 \newpage
 
-\chapter{Summary}
+{\let\clearpage\relax\chapter{Summary}}
 
 This report documents the project that was developed for the curricular unit
 of RCOM (FEUP). We implemented a simple FTP download application and configured
 a computer network with three computers, a commercial router and switch.
 
-\chapter{Introduction}
+{\let\clearpage\relax\chapter{Introduction}}
 
 In the first part of this report, we'll focus on the FTP download application
 and its architecture.\\
 In the second part of this report, we'll focus on the network configuration
 and analyze it.
 
-\chapter{Part 1 - Download application}
+{\let\clearpage\relax\chapter{Part 1 - Download application}}
 
 \section{Architecture}
 
@@ -76,9 +78,13 @@ informed of the error.
 
 \section{Report of a successful download}
 
-\includegraphics[width=1\textwidth]{images/download_report.png}
+\includegraphics[width=0.65\textwidth]{images/download_report.png}
 
-\chapter{Part 2 - Network configuration and analysis}
+{\let\clearpage\relax\chapter{Part 2 - Network configuration and analysis}}
+
+This image depicts the cable configuration of the network:
+
+\includegraphics[width=1\textwidth]{images/rcom_proj2_cables.png}
 
 \section{Experience 1 - Configure an IP Network}
 
@@ -438,7 +444,7 @@ the first and second connections. This means that, depending on how much
 data is being transfered for each connection, the throughput can be divided
 in half.
 
-\chapter{Conclusions}
+{\let\clearpage\relax\chapter{Conclusions}}
 The download application developed can download files using the FTP protocol,
 reports errors, supports authentication and always closes the connection
 gracefully.\\
@@ -447,7 +453,7 @@ computer networks: vlans, routing, NAT and DNS. The tests using the download
 application were successful and we were able to download files on the network
 configured.
 
-\chapter{References}
+{\let\clearpage\relax\chapter{References}}
 \begin{itemize}
   \item \url{https://en.wikipedia.org/wiki/Ethernet_frame}
   \item \url{https://www.juniper.net/documentation/en_US/junos/topics/concept/interface-security-loopback-understanding.html}
