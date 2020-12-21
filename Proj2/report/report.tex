@@ -4,6 +4,11 @@
 
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{listings}
+\lstset {
+    language=Bash,
+    backgroundcolor=\color{black!12}, % set backgroundcolor
+    basicstyle=\footnotesize, % basic font setting
+}
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{pgfplots}
@@ -293,9 +298,6 @@ $ip route 172.16.61.1 255.255.255.0 172.16.2.69$.
     \item \tux{3} pings \textbf{RC}:\\
       \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
       \textbf{RC}($172.16.61.254$)
-    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4}
-      (every ping after the first one):\\
-      \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
   \end{itemize}
   \item Step 4
   \begin{itemize}
@@ -462,5 +464,58 @@ configured.
 \end{itemize}
 
 \chapter{Annexes}
+
+\section{Annexes 1 - Code of the download application}
+\subsection{Makefile}
+\lstinputlisting[language=Make]{../Makefile}
+
+\subsection{download.c}
+\lstinputlisting[language=C]{../download.c}
+
+\section{Annexes 2 - Configuration commands}
+\subsection{Tux 2}
+\lstinputlisting{../scripts/tux2}
+
+\subsection{Tux 3}
+\lstinputlisting{../scripts/tux3}
+
+\subsection{Tux 4}
+\lstinputlisting{../scripts/tux4}
+
+\subsection{Switch}
+\lstinputlisting{../scripts/switch}
+
+\subsection{Router}
+\lstinputlisting{../scripts/router}
+
+\section{Annexes 3 - Wireshark logs}
+\subsection{Experience 1}
+  \includegraphics[width=1\textwidth]{images/exp1.png}
+\subsection{Experience 2 - Step 4}
+  \includegraphics[width=1\textwidth]{images/exp2_step4.png}
+\subsection{Experience 2 - Step 7 - Tux 2}
+  \includegraphics[width=1\textwidth]{images/exp2_step7_tux2.png}
+\subsection{Experience 2 - Step 7 - Tux 3}
+  \includegraphics[width=1\textwidth]{images/exp2_step7_tux3.png}
+\subsection{Experience 2 - Step 7 - Tux 4}
+  \includegraphics[width=1\textwidth]{images/exp2_step7_tux4.png}
+\subsection{Experience 3 - Step 5}
+  \includegraphics[width=1\textwidth]{images/exp3_step5.png}
+\subsection{Experience 3 - Step 8 - Eth0}
+  \includegraphics[width=1\textwidth]{images/exp3_step8_eth0.png}
+\subsection{Experience 3 - Step 8 - Eth1}
+  \includegraphics[width=1\textwidth]{images/exp3_step8_eth1.png}
+\subsection{Experience 3 - Step 8 - Eth1}
+  \includegraphics[width=1\textwidth]{images/exp3_step8_eth1.png}
+\subsection{Experience 4 - Step 3}
+  \includegraphics[width=1\textwidth]{images/exp4_step3.png}
+\subsection{Experience 4 - Step 4 - Substep 4}
+  \includegraphics[width=1\textwidth]{images/exp4_step4_substep4.png}
+\subsection{Experience 4 - Step 4 - Substep 7}
+  \includegraphics[width=1\textwidth]{images/exp4_step4_substep7.png}
+\subsection{Experience 5 - Step 3}
+  \includegraphics[width=1\textwidth]{images/exp5_step3.png}
+\subsection{Experience 6}
+  \includegraphics[width=1\textwidth]{images/exp6.png}
 
 \end{document}
