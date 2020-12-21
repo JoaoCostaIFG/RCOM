@@ -385,12 +385,24 @@ int getFTPFile(struct ConnectionObj *conObj) {
   return ACK;
 }
 
+void endCon(struct ConnectionObj *conObj) {
+  sendFTPCmd(conObj->ctrl_sock, "QUIT\n", NULL, 0);
+
+  /* Cleanup */
+  if (conObj->ctrl_sock >= 0)
+    close(conObj->ctrl_sock);
+  if (conObj->data_sock >= 0)
+    close(conObj->data_sock);
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 2)
     printUsage();
 
   /* parse input */
   struct ConnectionObj conObj;
+  conObj.ctrl_sock = -1;
+  conObj.data_sock = -1;
   parseUrl(argv[1], &conObj);
   printUrlParse(&conObj);
 
@@ -398,6 +410,7 @@ int main(int argc, char *argv[]) {
   if (startCtrlFTPCon(&conObj)) {
     fprintf(stderr, "startCtrlFTPCon(): failed to open control connection with "
                     "the server.\n");
+    endCon(&conObj);
     exit(1);
   }
 
@@ -408,18 +421,17 @@ int main(int argc, char *argv[]) {
   if (startDataFTPCon(&conObj)) {
     fprintf(stderr, "startDataFTPCon(): failed to open data connection with "
                     "the server.\n");
+    endCon(&conObj);
     exit(1);
   }
 
   if (getFTPFile(&conObj)) {
     fprintf(stderr, "getFTPFile(): failed to get the file %s/%s\n",
             conObj.dirname, conObj.filename);
+    endCon(&conObj);
     exit(1);
   }
 
-  /* Cleanup */
-  close(conObj.ctrl_sock);
-  close(conObj.data_sock);
-
+  endCon(&conObj);
   return 0;
 }
