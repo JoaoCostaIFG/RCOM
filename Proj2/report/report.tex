@@ -1,7 +1,11 @@
 \documentclass[11pt]{report}
 
 \usepackage[margin=0.45in]{geometry}
+\geometry{
+  left=0.45in
+}
 
+\usepackage{pdfpages}
 \usepackage{graphicx} % Add pictures to your document
 \usepackage{listings}
 \lstset {
@@ -12,7 +16,6 @@
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{pgfplots}
-\usepackage{sectsty}
 \usepackage{hyperref}
 \hypersetup{
   colorlinks=true,
@@ -87,11 +90,7 @@ informed of the error.
 
 {\let\clearpage\relax\chapter{Part 2 - Network configuration and analysis}}
 
-This image depicts the cable configuration of the network:
-
-\includegraphics[width=1\textwidth]{images/rcom_proj2_cables.png}
-
-\section{Experience 1 - Configure an IP Network}
+Annex 1 has a depiction of the physical configuration of the network.
 
 \subsection{Objectives}
 Connect two hosts to a local network (switch) and enable communication between
@@ -169,23 +168,22 @@ ifconfig eth0 172.16.61.1/24
 
 \subsection{Questions}
 \paragraph{How to configure vlan y0?}
-\begin{lstlisting}
+\begin{itemize}
+  \item Create the vlan.
+    \begin{lstlisting}
 configure terminal
 vlan y0
-end
-
+    \end{lstlisting}
+  \item Configure each switch port to access the vlan.
+    \begin{lstlisting}
+# example: port 3 access vlan y0
 configure terminal 
 interface fastethernet 0/3
 switchport mode access
 switchport access vlan y0
 end
-
-configure terminal 
-interface fastethernet 0/4
-switchport mode access
-switchport access vlan y0
-end
-\end{lstlisting}
+    \end{lstlisting}
+\end{itemize}
 
 \paragraph{How many broadcast domains are there? How can you conclude it from the logs?}
 There are two broadcast domains, one for each network (vlan):
@@ -290,65 +288,60 @@ $ip route 172.16.61.1 255.255.255.0 172.16.2.69$.
 \begin{itemize}
   \item Step 3
   \begin{itemize}
-    \item \tux{3} pings \tux{4}:\\
+    \item \tux{3} pings \tux{4}:
       \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$)
-    \item \tux{3} pings \tux{2}:\\
+    \item \tux{3} pings \tux{2}:
       \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
       \tux{2}($172.16.61.1$)
-    \item \tux{3} pings \textbf{RC}:\\
+    \item \tux{3} pings \textbf{RC}:
       \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
       \textbf{RC}($172.16.61.254$)
   \end{itemize}
   \item Step 4
   \begin{itemize}
-    \item \tux{2} pings \tux{3} with redirects disabled and no gateway route to 172.16.60.0/24 via \tux{4}:\\
+    \item \tux{2} pings \tux{3} with redirects disabled and no gateway route to 172.16.60.0/24 via \tux{4}:
       \tux{2}($172.16.61.1$) $\rightarrow$ \textbf{RC}($172.16.61.254$) $\rightarrow$
       \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
-    \item \tux{2} pings \tux{3} with redirects disabled:\\
+    \item \tux{2} pings \tux{3} with redirects disabled:
       \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$
       \tux{3}($172.16.60.1$)
-    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4} (first ping):\\
+    \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4} (first ping):
       \tux{2}($172.16.61.1$) $\rightarrow$ \textbf{RC}($172.16.61.254$) $\rightarrow$
       \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
     \item \tux{2} pings \tux{3} with redirects enabled and no gateway route to 172.16.60.0/24 via \tux{4}
-      (every ping after the first one):\\
+      (every ping after the first one):
       \tux{2}($172.16.61.1$) $\rightarrow$ \tux{4}($172.16.61.253$) $\rightarrow$ \tux{3}($172.16.60.1$)
   \end{itemize}
   \item Step 5. \tux{3} pings the router of lab I.320($172.16.2.254$) without NAT: no route
-  \item Step 7. \tux{3} pings the router of lab I.320($172.16.2.254$) with NAT:\\
+  \item Step 7. \tux{3} pings the router of lab I.320($172.16.2.254$) with NAT:
     \tux{3}($172.16.60.1$) $\rightarrow$ \tux{4}($172.16.60.254$) $\rightarrow$
     \textbf{RC}($172.16.61.254$) $\rightarrow$ \textbf{Router do Lab}($172.16.2.254$)
 \end{itemize}
 
 \paragraph{How to configure NAT in a commercial router?}
-\begin{lstlisting}
-# inside
-conf t 
+\begin{itemize}
+  \item Define the IP address for the private interface (\textbf{inside}).
+    \begin{lstlisting}
 interface fastethernet 0/0
 ip address 172.16.61.254 255.255.255.0 
-no shutdown 
 ip nat inside 
-exit 
-
-# outside
+    \end{lstlisting}
+  \item Define the IP address for the public (\textbf{outside}).
+    \begin{lstlisting}
 interface fastethernet 0/1
 ip address 172.16.2.69 255.255.255.0 
-no shutdown 
 ip nat outside 
-exit 
-
+    \end{lstlisting}
+  \item Create access-list for the private IP's that are allowed to pass though the NAT.
+    \begin{lstlisting}
 # nat
 ip nat pool ovrld 172.16.2.69 172.16.2.69 prefix 24 
 ip nat inside source list 1 pool ovrld overload 
-
 # allowed private IP addreses (only until IP 7 on both vlans)
 access-list 1 permit 172.16.60.0 0.0.0.7 
 access-list 1 permit 172.16.61.0 0.0.0.7 
-
-# routes
-ip route 0.0.0.0 0.0.0.0 172.16.2.254 
-ip route 172.16.60.0 255.255.255.0 172.16.61.253 
-\end{lstlisting}
+    \end{lstlisting}
+\end{itemize}
 
 \paragraph{What does NAT do?}
 NAT translates the IP addresses of a private network to a public IP address.
@@ -457,22 +450,25 @@ configured.
 
 {\let\clearpage\relax\chapter{References}}
 \begin{itemize}
-  \item \url{https://en.wikipedia.org/wiki/Ethernet_frame}
-  \item \url{https://www.juniper.net/documentation/en_US/junos/topics/concept/interface-security-loopback-understanding.html}
-  \item \url{https://en.wikipedia.org/wiki/Transmission_Control_Protocol}
-  \item \url{https://upaae.com/how-to-add-and-configure-static-routes-on-cisco-router/}
+  \item \href{https://en.wikipedia.org/wiki/Ethernet_frame}{Ethernet frame}
+  \item \href{https://www.juniper.net/documentation/en_US/junos/topics/concept/interface-security-loopback-understanding.html}{Understanding loopback interface}
+  \item \href{https://en.wikipedia.org/wiki/Transmission_Control_Protocol}{TCP}
+  \item \href{https://upaae.com/how-to-add-and-configure-static-routes-on-cisco-router/}{Static routes in Cisco router}
 \end{itemize}
 
 \chapter{Annexes}
 
-\section{Annexes 1 - Code of the download application}
+\section{Annexes 1 - Physical configuration of the network}
+\includegraphics[width=1\textwidth]{images/rcom_proj2_cables.png}
+
+\section{Annexes 2 - Code of the download application}
 \subsection{Makefile}
 \lstinputlisting[language=Make]{../Makefile}
 
 \subsection{download.c}
 \lstinputlisting[language=C]{../download.c}
 
-\section{Annexes 2 - Configuration commands}
+\section{Annexes 3 - Configuration commands}
 \subsection{Tux 2}
 \lstinputlisting{../scripts/tux2}
 
@@ -488,7 +484,7 @@ configured.
 \subsection{Router}
 \lstinputlisting{../scripts/router}
 
-\section{Annexes 3 - Wireshark logs}
+\section{Annexes 4 - Wireshark logs}
 \subsection{Experience 1}
   \includegraphics[width=1\textwidth]{images/exp1.png}
 \subsection{Experience 2 - Step 4}
@@ -517,5 +513,8 @@ configured.
   \includegraphics[width=1\textwidth]{images/exp5_step3.png}
 \subsection{Experience 6}
   \includegraphics[width=1\textwidth]{images/exp6.png}
+
+\section{Annexes 5 - TCP connection statistics}
+\includepdf[pages=-]{./images/tcp_graph.pdf}
 
 \end{document}

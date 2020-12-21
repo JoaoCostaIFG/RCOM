@@ -5,52 +5,53 @@
 \BOOKMARK [1][-]{section.3.2}{Download steps}{chapter.3}% 5
 \BOOKMARK [1][-]{section.3.3}{Report of a successful download}{chapter.3}% 6
 \BOOKMARK [0][-]{chapter.4}{Part 2 - Network configuration and analysis}{}% 7
-\BOOKMARK [1][-]{section.4.1}{Experience 1 - Configure an IP Network}{chapter.4}% 8
-\BOOKMARK [2][-]{subsection.4.1.1}{Objectives}{section.4.1}% 9
-\BOOKMARK [2][-]{subsection.4.1.2}{Configuration commands}{section.4.1}% 10
-\BOOKMARK [2][-]{subsection.4.1.3}{Questions}{section.4.1}% 11
-\BOOKMARK [1][-]{section.4.2}{Experience 2 - Implement two virtual LANs in a switch}{chapter.4}% 12
-\BOOKMARK [2][-]{subsection.4.2.1}{Objectives}{section.4.2}% 13
-\BOOKMARK [2][-]{subsection.4.2.2}{Configuration commands}{section.4.2}% 14
-\BOOKMARK [2][-]{subsection.4.2.3}{Questions}{section.4.2}% 15
-\BOOKMARK [1][-]{section.4.3}{Experience 3 - Configure a router in Linux}{chapter.4}% 16
-\BOOKMARK [2][-]{subsection.4.3.1}{Objectives}{section.4.3}% 17
-\BOOKMARK [2][-]{subsection.4.3.2}{Configuration commands}{section.4.3}% 18
-\BOOKMARK [2][-]{subsection.4.3.3}{Questions}{section.4.3}% 19
-\BOOKMARK [1][-]{section.4.4}{Experience 4 - Configure a Commercial Router and Implement NAT}{chapter.4}% 20
-\BOOKMARK [2][-]{subsection.4.4.1}{Objectives}{section.4.4}% 21
-\BOOKMARK [2][-]{subsection.4.4.2}{Configuration commands}{section.4.4}% 22
-\BOOKMARK [2][-]{subsection.4.4.3}{Questions}{section.4.4}% 23
-\BOOKMARK [1][-]{section.4.5}{Experience 5 - DNS}{chapter.4}% 24
-\BOOKMARK [2][-]{subsection.4.5.1}{Objectives}{section.4.5}% 25
-\BOOKMARK [2][-]{subsection.4.5.2}{Questions}{section.4.5}% 26
-\BOOKMARK [1][-]{section.4.6}{Experience 6 - TCP connections}{chapter.4}% 27
-\BOOKMARK [2][-]{subsection.4.6.1}{Objectives}{section.4.6}% 28
-\BOOKMARK [2][-]{subsection.4.6.2}{Questions}{section.4.6}% 29
-\BOOKMARK [0][-]{chapter.5}{Conclusions}{}% 30
-\BOOKMARK [0][-]{chapter.6}{References}{}% 31
-\BOOKMARK [0][-]{chapter.7}{Annexes}{}% 32
-\BOOKMARK [1][-]{section.7.1}{Annexes 1 - Code of the download application}{chapter.7}% 33
-\BOOKMARK [2][-]{subsection.7.1.1}{Makefile}{section.7.1}% 34
-\BOOKMARK [2][-]{subsection.7.1.2}{download.c}{section.7.1}% 35
-\BOOKMARK [1][-]{section.7.2}{Annexes 2 - Configuration commands}{chapter.7}% 36
-\BOOKMARK [2][-]{subsection.7.2.1}{Tux 2}{section.7.2}% 37
-\BOOKMARK [2][-]{subsection.7.2.2}{Tux 3}{section.7.2}% 38
-\BOOKMARK [2][-]{subsection.7.2.3}{Tux 4}{section.7.2}% 39
-\BOOKMARK [2][-]{subsection.7.2.4}{Switch}{section.7.2}% 40
-\BOOKMARK [2][-]{subsection.7.2.5}{Router}{section.7.2}% 41
-\BOOKMARK [1][-]{section.7.3}{Annexes 3 - Wireshark logs}{chapter.7}% 42
-\BOOKMARK [2][-]{subsection.7.3.1}{Experience 1}{section.7.3}% 43
-\BOOKMARK [2][-]{subsection.7.3.2}{Experience 2 - Step 4}{section.7.3}% 44
-\BOOKMARK [2][-]{subsection.7.3.3}{Experience 2 - Step 7 - Tux 2}{section.7.3}% 45
-\BOOKMARK [2][-]{subsection.7.3.4}{Experience 2 - Step 7 - Tux 3}{section.7.3}% 46
-\BOOKMARK [2][-]{subsection.7.3.5}{Experience 2 - Step 7 - Tux 4}{section.7.3}% 47
-\BOOKMARK [2][-]{subsection.7.3.6}{Experience 3 - Step 5}{section.7.3}% 48
-\BOOKMARK [2][-]{subsection.7.3.7}{Experience 3 - Step 8 - Eth0}{section.7.3}% 49
-\BOOKMARK [2][-]{subsection.7.3.8}{Experience 3 - Step 8 - Eth1}{section.7.3}% 50
-\BOOKMARK [2][-]{subsection.7.3.9}{Experience 3 - Step 8 - Eth1}{section.7.3}% 51
-\BOOKMARK [2][-]{subsection.7.3.10}{Experience 4 - Step 3}{section.7.3}% 52
-\BOOKMARK [2][-]{subsection.7.3.11}{Experience 4 - Step 4 - Substep 4}{section.7.3}% 53
-\BOOKMARK [2][-]{subsection.7.3.12}{Experience 4 - Step 4 - Substep 7}{section.7.3}% 54
-\BOOKMARK [2][-]{subsection.7.3.13}{Experience 5 - Step 3}{section.7.3}% 55
-\BOOKMARK [2][-]{subsection.7.3.14}{Experience 6}{section.7.3}% 56
+\BOOKMARK [1][-]{subsection.4.0.1}{Objectives}{chapter.4}% 8
+\BOOKMARK [2][-]{subsection.4.0.2}{Configuration commands}{subsection.4.0.1}% 9
+\BOOKMARK [2][-]{subsection.4.0.3}{Questions}{subsection.4.0.1}% 10
+\BOOKMARK [1][-]{section.4.1}{Experience 2 - Implement two virtual LANs in a switch}{chapter.4}% 11
+\BOOKMARK [2][-]{subsection.4.1.1}{Objectives}{section.4.1}% 12
+\BOOKMARK [2][-]{subsection.4.1.2}{Configuration commands}{section.4.1}% 13
+\BOOKMARK [2][-]{subsection.4.1.3}{Questions}{section.4.1}% 14
+\BOOKMARK [1][-]{section.4.2}{Experience 3 - Configure a router in Linux}{chapter.4}% 15
+\BOOKMARK [2][-]{subsection.4.2.1}{Objectives}{section.4.2}% 16
+\BOOKMARK [2][-]{subsection.4.2.2}{Configuration commands}{section.4.2}% 17
+\BOOKMARK [2][-]{subsection.4.2.3}{Questions}{section.4.2}% 18
+\BOOKMARK [1][-]{section.4.3}{Experience 4 - Configure a Commercial Router and Implement NAT}{chapter.4}% 19
+\BOOKMARK [2][-]{subsection.4.3.1}{Objectives}{section.4.3}% 20
+\BOOKMARK [2][-]{subsection.4.3.2}{Configuration commands}{section.4.3}% 21
+\BOOKMARK [2][-]{subsection.4.3.3}{Questions}{section.4.3}% 22
+\BOOKMARK [1][-]{section.4.4}{Experience 5 - DNS}{chapter.4}% 23
+\BOOKMARK [2][-]{subsection.4.4.1}{Objectives}{section.4.4}% 24
+\BOOKMARK [2][-]{subsection.4.4.2}{Questions}{section.4.4}% 25
+\BOOKMARK [1][-]{section.4.5}{Experience 6 - TCP connections}{chapter.4}% 26
+\BOOKMARK [2][-]{subsection.4.5.1}{Objectives}{section.4.5}% 27
+\BOOKMARK [2][-]{subsection.4.5.2}{Questions}{section.4.5}% 28
+\BOOKMARK [0][-]{chapter.5}{Conclusions}{}% 29
+\BOOKMARK [0][-]{chapter.6}{References}{}% 30
+\BOOKMARK [0][-]{chapter.7}{Annexes}{}% 31
+\BOOKMARK [1][-]{section.7.1}{Annexes 1 - Physical configuration of the network}{chapter.7}% 32
+\BOOKMARK [1][-]{section.7.2}{Annexes 2 - Code of the download application}{chapter.7}% 33
+\BOOKMARK [2][-]{subsection.7.2.1}{Makefile}{section.7.2}% 34
+\BOOKMARK [2][-]{subsection.7.2.2}{download.c}{section.7.2}% 35
+\BOOKMARK [1][-]{section.7.3}{Annexes 3 - Configuration commands}{chapter.7}% 36
+\BOOKMARK [2][-]{subsection.7.3.1}{Tux 2}{section.7.3}% 37
+\BOOKMARK [2][-]{subsection.7.3.2}{Tux 3}{section.7.3}% 38
+\BOOKMARK [2][-]{subsection.7.3.3}{Tux 4}{section.7.3}% 39
+\BOOKMARK [2][-]{subsection.7.3.4}{Switch}{section.7.3}% 40
+\BOOKMARK [2][-]{subsection.7.3.5}{Router}{section.7.3}% 41
+\BOOKMARK [1][-]{section.7.4}{Annexes 4 - Wireshark logs}{chapter.7}% 42
+\BOOKMARK [2][-]{subsection.7.4.1}{Experience 1}{section.7.4}% 43
+\BOOKMARK [2][-]{subsection.7.4.2}{Experience 2 - Step 4}{section.7.4}% 44
+\BOOKMARK [2][-]{subsection.7.4.3}{Experience 2 - Step 7 - Tux 2}{section.7.4}% 45
+\BOOKMARK [2][-]{subsection.7.4.4}{Experience 2 - Step 7 - Tux 3}{section.7.4}% 46
+\BOOKMARK [2][-]{subsection.7.4.5}{Experience 2 - Step 7 - Tux 4}{section.7.4}% 47
+\BOOKMARK [2][-]{subsection.7.4.6}{Experience 3 - Step 5}{section.7.4}% 48
+\BOOKMARK [2][-]{subsection.7.4.7}{Experience 3 - Step 8 - Eth0}{section.7.4}% 49
+\BOOKMARK [2][-]{subsection.7.4.8}{Experience 3 - Step 8 - Eth1}{section.7.4}% 50
+\BOOKMARK [2][-]{subsection.7.4.9}{Experience 3 - Step 8 - Eth1}{section.7.4}% 51
+\BOOKMARK [2][-]{subsection.7.4.10}{Experience 4 - Step 3}{section.7.4}% 52
+\BOOKMARK [2][-]{subsection.7.4.11}{Experience 4 - Step 4 - Substep 4}{section.7.4}% 53
+\BOOKMARK [2][-]{subsection.7.4.12}{Experience 4 - Step 4 - Substep 7}{section.7.4}% 54
+\BOOKMARK [2][-]{subsection.7.4.13}{Experience 5 - Step 3}{section.7.4}% 55
+\BOOKMARK [2][-]{subsection.7.4.14}{Experience 6}{section.7.4}% 56
+\BOOKMARK [1][-]{section.7.5}{Annexes 5 - TCP connection statistics}{chapter.7}% 57
