@@ -437,7 +437,7 @@ appearance of a second TCP connection? How?}
 When a second TCP connection appears, the throughput has to be divided by
 the first and second connections. This means that, depending on how much
 data is being transfered for each connection, the throughput can be divided
-in half.
+in half (See annex 5).
 
 {\let\clearpage\relax\chapter{Conclusions}}
 The download application developed can download files using the FTP protocol,
@@ -446,7 +446,7 @@ gracefully.\\
 The network configured allowed us to observe and handle many concepts of
 computer networks: vlans, routing, NAT and DNS. The tests using the download
 application were successful and we were able to download files on the network
-configured.
+configured (See annex 5).
 
 {\let\clearpage\relax\chapter{References}}
 \begin{itemize}
@@ -515,6 +515,12 @@ configured.
   \includegraphics[width=1\textwidth]{images/exp6.png}
 
 \section{Annexes 5 - TCP connection statistics}
-\includepdf[pages=-]{./images/tcp_graph.pdf}
+Note: the two wireshark log files used to generate these graphvs haven't been
+included in the submission, because they exceeded moodle's submission max
+file size (even when compressed).
+
+\includepdf[pages=-, pagecommand={\subsection{Single download}}]{./images/tcp_graph.pdf}
+
+\includepdf[pages=-, pagecommand={\subsection{Two concurrent downloads}}]{./images/same_machine_concurr.pdf}
 
 \end{document}
